@@ -6,8 +6,10 @@ retries exponenciais e controle de concorrência com semáforo (REQ-HARV-01, REQ
 
 import asyncio
 import hashlib
+import json
 import os
 import random
+import time
 from pathlib import Path
 
 import httpx
@@ -17,6 +19,44 @@ from virada_eleitoral.contracts.models import RawBuFileBundle
 
 # Tamanho do bloco para streaming de rede (64 KB)
 STREAM_CHUNK_SIZE = 65536
+
+# UFs oficiais da Justiça Eleitoral (26 estados + DF + Exterior)
+ALL_TSE_UFS: list[str] = [
+    "AC",
+    "AL",
+    "AM",
+    "AP",
+    "BA",
+    "CE",
+    "DF",
+    "ES",
+    "GO",
+    "MA",
+    "MG",
+    "MS",
+    "MT",
+    "PA",
+    "PB",
+    "PE",
+    "PI",
+    "PR",
+    "RJ",
+    "RN",
+    "RO",
+    "RR",
+    "RS",
+    "SC",
+    "SE",
+    "SP",
+    "TO",
+    "ZZ",
+]
+
+# Carimbos canônicos de publicação por eleição e turno no repositório de arquivos do TSE
+CANONICAL_BU_TIMESTAMP_MAP: dict[int, dict[int, str]] = {
+    2022: {1: "051020221321", 2: "311020221535"},
+    2026: {1: "051020261403"},
+}
 
 
 class RemoteTseBuProvider:
@@ -39,52 +79,106 @@ class RemoteTseBuProvider:
         self.download_timeout = download_timeout_seconds
         self.max_retries = max_retries
 
-    def fetch_dataset_catalog(self, ano: int) -> dict[tuple[str, int], tuple[str, str | None]]:
+    def fetch_dataset_catalog(
+        self,
+        ano: int,
+        cache_dir: Path | None = None,
+    ) -> dict[tuple[str, int], tuple[str, str | None]]:
         """Consulta o catálogo CKAN do TSE e mapeia URLs de BUs e hashes SHA-512.
+
+        Implementa cache em disco e fallback para estrutura canônica do CDN em caso
+        de rate limiting (HTTP 429) na API do portal de Dados Abertos.
 
         Args:
             ano: Ano da eleição (ex.: 2022 ou 2026).
+            cache_dir: Diretório opcional para leitura/escrita de cache do catálogo.
 
         Returns:
             dict[tuple[str, int], tuple[str, str | None]]: Dicionário mapeando
                 (sigla_uf, turno) para tupla (url_arquivo_bu, url_hash_sha512).
 
         Raises:
-            HarvesterError: Se a API CKAN do TSE retornar erro ou pacote não encontrado.
+            HarvesterError: Se a API CKAN do TSE falhar e não houver fallback canônico.
         """
+        cache_file = cache_dir / f".catalog_cache_{ano}.json" if cache_dir else None
+        if cache_file and cache_file.exists():
+            try:
+                with cache_file.open("r", encoding="utf-8") as f:
+                    raw_data = json.load(f)
+                    return {
+                        (k.split("_")[0], int(k.split("_")[1])): (v[0], v[1])
+                        for k, v in raw_data.items()
+                    }
+            except Exception:
+                pass
+
         api_url = f"{self.base_url}/api/3/action/package_show?id=resultados-{ano}-boletim-de-urna"
         headers = {"User-Agent": "ViradaEleitoral-AuditPipeline/0.1 (+civic-audit-sdd)"}
-        try:
-            with httpx.Client(timeout=self.download_timeout, headers=headers) as client:
-                resp = client.get(api_url)
-                if resp.status_code != 200:
-                    raise HarvesterError(
-                        f"TSE CKAN API retornou status HTTP {resp.status_code} para ano {ano}."
-                    )
-                data = resp.json()
-        except httpx.HTTPError as e:
-            raise HarvesterError(f"Falha de conexão com TSE CKAN API: {e}") from e
-
-        resources = data.get("result", {}).get("resources", [])
-        bu_map: dict[tuple[str, int], str] = {}
-        hash_map: dict[tuple[str, int], str] = {}
-
-        for res in resources:
-            name = str(res.get("name", ""))
-            url = str(res.get("url", ""))
-            parts = name.split(" - ")
-            if len(parts) >= 3:
-                uf = parts[0].strip().upper()
-                tipo = parts[1].strip()
-                turno = 1 if "primeiro" in parts[2].lower() or "1t" in parts[2].lower() else 2
-                if "Boletim de Urna" in tipo:
-                    bu_map[(uf, turno)] = url
-                elif "Hash" in tipo or "SHA" in tipo:
-                    hash_map[(uf, turno)] = url
-
         catalog: dict[tuple[str, int], tuple[str, str | None]] = {}
-        for key, bu_url in bu_map.items():
-            catalog[key] = (bu_url, hash_map.get(key))
+
+        ckan_success = False
+        for attempt in range(self.max_retries):
+            try:
+                with httpx.Client(timeout=self.download_timeout, headers=headers) as client:
+                    resp = client.get(api_url)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        resources = data.get("result", {}).get("resources", [])
+                        bu_map: dict[tuple[str, int], str] = {}
+                        hash_map: dict[tuple[str, int], str] = {}
+
+                        for res in resources:
+                            name = str(res.get("name", ""))
+                            url = str(res.get("url", ""))
+                            parts = name.split(" - ")
+                            if len(parts) >= 3:
+                                uf = parts[0].strip().upper()
+                                tipo = parts[1].strip()
+                                turno = (
+                                    1
+                                    if "primeiro" in parts[2].lower() or "1t" in parts[2].lower()
+                                    else 2
+                                )
+                                if "Boletim de Urna" in tipo:
+                                    bu_map[(uf, turno)] = url
+                                elif "Hash" in tipo or "SHA" in tipo:
+                                    hash_map[(uf, turno)] = url
+
+                        for key, bu_url in bu_map.items():
+                            catalog[key] = (bu_url, hash_map.get(key))
+                        ckan_success = True
+                        break
+                    elif resp.status_code == 429:
+                        time.sleep(1.5 * (attempt + 1))
+                        continue
+            except httpx.HTTPError:
+                time.sleep(1.0)
+                continue
+
+        # Fallback canônico determinístico caso a API CKAN esteja sob rate limit (429)
+        if not ckan_success:
+            if ano in CANONICAL_BU_TIMESTAMP_MAP:
+                for turno, ts in CANONICAL_BU_TIMESTAMP_MAP[ano].items():
+                    for uf in ALL_TSE_UFS:
+                        bu_url = (
+                            f"https://cdn.tse.jus.br/estatistica/sead/eleicoes/"
+                            f"eleicoes{ano}/buweb/bweb_{turno}t_{uf}_{ts}.zip"
+                        )
+                        hash_url = f"{bu_url}.sha512"
+                        catalog[(uf, turno)] = (bu_url, hash_url)
+            else:
+                raise HarvesterError(
+                    f"TSE CKAN API sob rate limit (HTTP 429) e sem fallback canônico para {ano}."
+                )
+
+        if cache_file and catalog and cache_dir:
+            try:
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                serializable = {f"{k[0]}_{k[1]}": list(v) for k, v in catalog.items()}
+                with cache_file.open("w", encoding="utf-8") as f:
+                    json.dump(serializable, f, indent=2)
+            except Exception:
+                pass
 
         return catalog
 

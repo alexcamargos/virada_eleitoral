@@ -112,7 +112,7 @@ def download(
     manifest_mgr = ManifestManager(dest_dir)
 
     try:
-        catalog = provider.fetch_dataset_catalog(ano=ano)
+        catalog = provider.fetch_dataset_catalog(ano=ano, cache_dir=dest_dir)
     except Exception as e:
         console.print(f"[bold red]Erro ao consultar API do TSE:[/bold red] {e}")
         raise typer.Exit(code=1) from e
