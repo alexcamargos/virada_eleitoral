@@ -39,6 +39,78 @@ class RemoteTseBuProvider:
         self.download_timeout = download_timeout_seconds
         self.max_retries = max_retries
 
+    def fetch_dataset_catalog(self, ano: int) -> dict[tuple[str, int], tuple[str, str | None]]:
+        """Consulta o catálogo CKAN do TSE e mapeia URLs de BUs e hashes SHA-512.
+
+        Args:
+            ano: Ano da eleição (ex.: 2022 ou 2026).
+
+        Returns:
+            dict[tuple[str, int], tuple[str, str | None]]: Dicionário mapeando
+                (sigla_uf, turno) para tupla (url_arquivo_bu, url_hash_sha512).
+
+        Raises:
+            HarvesterError: Se a API CKAN do TSE retornar erro ou pacote não encontrado.
+        """
+        api_url = f"{self.base_url}/api/3/action/package_show?id=resultados-{ano}-boletim-de-urna"
+        headers = {"User-Agent": "ViradaEleitoral-AuditPipeline/0.1 (+civic-audit-sdd)"}
+        try:
+            with httpx.Client(timeout=self.download_timeout, headers=headers) as client:
+                resp = client.get(api_url)
+                if resp.status_code != 200:
+                    raise HarvesterError(
+                        f"TSE CKAN API retornou status HTTP {resp.status_code} para ano {ano}."
+                    )
+                data = resp.json()
+        except httpx.HTTPError as e:
+            raise HarvesterError(f"Falha de conexão com TSE CKAN API: {e}") from e
+
+        resources = data.get("result", {}).get("resources", [])
+        bu_map: dict[tuple[str, int], str] = {}
+        hash_map: dict[tuple[str, int], str] = {}
+
+        for res in resources:
+            name = str(res.get("name", ""))
+            url = str(res.get("url", ""))
+            parts = name.split(" - ")
+            if len(parts) >= 3:
+                uf = parts[0].strip().upper()
+                tipo = parts[1].strip()
+                turno = 1 if "primeiro" in parts[2].lower() or "1t" in parts[2].lower() else 2
+                if "Boletim de Urna" in tipo:
+                    bu_map[(uf, turno)] = url
+                elif "Hash" in tipo or "SHA" in tipo:
+                    hash_map[(uf, turno)] = url
+
+        catalog: dict[tuple[str, int], tuple[str, str | None]] = {}
+        for key, bu_url in bu_map.items():
+            catalog[key] = (bu_url, hash_map.get(key))
+
+        return catalog
+
+    def fetch_expected_sha512(self, hash_url: str) -> str | None:
+        """Obtém o hash SHA-512 oficial publicado pelo TSE a partir da URL.
+
+        Args:
+            hash_url: URL para o arquivo de hash .sha512.
+
+        Returns:
+            str | None: String contendo os 128 caracteres hexadecimais do hash.
+
+        Raises:
+            None: Retorna None em caso de falha de conexão.
+        """
+        headers = {"User-Agent": "ViradaEleitoral-AuditPipeline/0.1 (+civic-audit-sdd)"}
+        try:
+            with httpx.Client(timeout=15.0, headers=headers) as client:
+                resp = client.get(hash_url)
+                if resp.status_code == 200:
+                    parts = resp.text.strip().split()
+                    return parts[0] if parts else None
+        except httpx.HTTPError:
+            pass
+        return None
+
     async def download_bu_file(
         self,
         url: str,

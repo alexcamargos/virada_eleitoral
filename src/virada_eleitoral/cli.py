@@ -77,6 +77,101 @@ def harvest(
     )
 
 
+@app.command()
+def download(
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
+    uf: Annotated[str, typer.Option(help="Sigla da UF ou ALL para todas.")] = "ALL",
+    turno: Annotated[int, typer.Option(help="Turno da eleição (1, 2 ou 0 para ambos).")] = 0,
+    dest_dir: Annotated[
+        Path, typer.Option(help="Diretório onde os arquivos de BU brutos serão salvos.")
+    ] = Path("data/raw"),
+) -> None:
+    """Baixa arquivos de Boletins de Urna oficiais diretamente do Portal de Dados Abertos do TSE.
+
+    Args:
+        ano: Ano da eleição (ex.: 2022 ou 2026).
+        uf: Sigla da UF ou ALL para todas as UFs disponíveis.
+        turno: Turno da eleição (1, 2 ou 0 para ambos).
+        dest_dir: Diretório de destino final dos arquivos baixados.
+
+    Returns:
+        None
+
+    Raises:
+        typer.Exit: Caso ocorra erro de catálogo ou falha de integridade no download.
+    """
+    import asyncio
+
+    from virada_eleitoral.harvester.remote_provider import RemoteTseBuProvider
+
+    console.print(
+        f"[bold blue]Consultando catálogo oficial de Boletins de Urna do TSE "
+        f"(Ano {ano})...[/bold blue]"
+    )
+    provider = RemoteTseBuProvider()
+    manifest_mgr = ManifestManager(dest_dir)
+
+    try:
+        catalog = provider.fetch_dataset_catalog(ano=ano)
+    except Exception as e:
+        console.print(f"[bold red]Erro ao consultar API do TSE:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    target_keys = sorted(catalog.keys())
+    if uf.upper() != "ALL":
+        target_keys = [k for k in target_keys if k[0] == uf.upper()]
+    if turno in (1, 2):
+        target_keys = [k for k in target_keys if k[1] == turno]
+
+    if not target_keys:
+        console.print(
+            f"[yellow]Aviso:[/yellow] Nenhum arquivo oficial encontrado no TSE para "
+            f"Ano={ano}, UF={uf}, Turno={turno}."
+        )
+        return
+
+    console.print(f"Localizados [bold cyan]{len(target_keys)}[/bold cyan] arquivos para download.")
+
+    async def _download_all() -> int:
+        success_count = 0
+        for current_uf, current_turno in target_keys:
+            bu_url, hash_url = catalog[(current_uf, current_turno)]
+            expected_hash = provider.fetch_expected_sha512(hash_url) if hash_url else None
+            filename = bu_url.split("/")[-1].split("?")[0]
+            console.print(
+                f"Baixando [bold]{current_uf}[/bold] (Turno {current_turno}) - "
+                f"[dim]{filename}[/dim]..."
+            )
+            try:
+                bundle = await provider.download_bu_file(
+                    url=bu_url,
+                    dest_dir=dest_dir,
+                    ano=ano,
+                    turno=current_turno,
+                    uf=current_uf,
+                    expected_sha512=expected_hash,
+                )
+                manifest_mgr.create_and_save_manifest(
+                    ano=ano,
+                    turno=current_turno,
+                    uf=current_uf,
+                    file_path=bundle.file_path,
+                    expected_sha512=expected_hash,
+                )
+                size_mb = bundle.file_size_bytes / (1024 * 1024)
+                console.print(f"  [green]OK:[/green] {size_mb:.2f} MB | SHA-512 oficial validado.")
+                success_count += 1
+            except Exception as err:
+                console.print(f"  [bold red]Falha ao baixar {current_uf}:[/bold red] {err}")
+        return success_count
+
+    downloaded = asyncio.run(_download_all())
+    console.print(
+        f"[green]Download concluído:[/green] {downloaded}/{len(target_keys)} arquivos salvos em "
+        f"[bold]{dest_dir}[/bold]."
+    )
+
+
 @app.command(name="seed-sample")
 def seed_sample(
     out_dir: Annotated[
