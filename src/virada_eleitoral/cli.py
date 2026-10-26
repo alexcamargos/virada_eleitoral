@@ -77,6 +77,45 @@ def harvest(
     )
 
 
+@app.command(name="seed-sample")
+def seed_sample(
+    out_dir: Annotated[
+        Path, typer.Option(help="Diretório de saída para os arquivos sintéticos de BU.")
+    ] = Path("data/raw"),
+) -> None:
+    """Gera arquivos sintéticos de demonstração (fixtures áureas FX-01 a FX-10) em data/raw.
+
+    Args:
+        out_dir: Diretório onde os arquivos CSV serão criados.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    console.print(
+        f"[bold blue]Gerando arquivos sintéticos de demonstração em:[/bold blue] {out_dir}"
+    )
+    import sys
+
+    try:
+        from tests.fixtures.builder import build_synthetic_bu_dataset
+    except ModuleNotFoundError:
+        sys.path.insert(0, str(Path.cwd()))
+        from tests.fixtures.builder import build_synthetic_bu_dataset
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    p1, p2 = build_synthetic_bu_dataset(out_dir)
+    console.print(
+        f"[green]Arquivos de demonstração gerados com sucesso:[/green]\n"
+        f"  - [bold]{p1}[/bold]\n"
+        f"  - [bold]{p2}[/bold]\n"
+        f"Agora você pode rodar o pipeline:\n"
+        f"  [bold cyan]uv run virada run-all --ano 2022 --uf ALL[/bold cyan]"
+    )
+
+
 @app.command()
 def normalize(
     ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
@@ -87,8 +126,21 @@ def normalize(
     processed_dir: Annotated[
         Path, typer.Option(help="Diretório de saída para Parquets particionados.")
     ] = Path("data/processed"),
-) -> None:
-    """Filtra votos presidenciais, pivota candidatos e efetua o pareamento 1T x 2T."""
+) -> int:
+    """Filtra votos presidenciais, pivota candidatos e efetua o pareamento 1T x 2T.
+
+    Args:
+        ano: Ano eleitoral analisado (padrão: 2022).
+        uf: Sigla da UF ou ALL para processar todas as UFs disponíveis.
+        raw_dir: Diretório onde os arquivos de BU brutos estão armazenados.
+        processed_dir: Diretório de destino das partições Parquet Hive.
+
+    Returns:
+        int: Quantidade total de seções eleitorais pareadas com sucesso.
+
+    Raises:
+        None: Retorna 0 caso não existam arquivos suficientes.
+    """
     console.print(
         f"[bold blue]Iniciando normalização e pareamento (Ano {ano}, UF {uf})...[/bold blue]"
     )
@@ -99,7 +151,7 @@ def normalize(
 
     if not files_1t or not files_2t:
         console.print(f"[yellow]Aviso:[/yellow] Arquivos de 1T e 2T insuficientes em {raw_dir}")
-        return
+        return 0
 
     # Mapear por UF
     map_1t = {f.name.split("_")[2].upper(): f for f in files_1t if len(f.name.split("_")) >= 3}
@@ -123,6 +175,7 @@ def normalize(
         f"[green]Normalização concluída:[/green] {total_paired} seções gravadas em "
         f"[bold]{processed_dir}[/bold]."
     )
+    return total_paired
 
 
 @app.command()
@@ -135,9 +188,28 @@ def consolidate(
         "data/virada_eleitoral.duckdb"
     ),
 ) -> None:
-    """Consolida as partições Parquet no DuckDB e computa as visões analíticas OLAP."""
+    """Consolida as partições Parquet no DuckDB e computa as visões analíticas OLAP.
+
+    Args:
+        ano: Ano da eleição a consolidar.
+        processed_dir: Diretório onde as partições Parquet estão armazenadas.
+        db_path: Caminho do arquivo DuckDB a ser criado ou atualizado.
+
+    Returns:
+        None
+
+    Raises:
+        typer.Exit: Caso nenhuma partição Parquet seja encontrada para o ano.
+    """
     console.print(f"[bold blue]Consolidando partições Parquet no DuckDB:[/bold blue] {db_path}")
     pattern = processed_dir / f"ano={ano}" / "uf=*" / "*.parquet"
+    matching_files = list(processed_dir.glob(f"ano={ano}/uf=*/*.parquet"))
+    if not matching_files:
+        console.print(
+            f"[bold red]Erro:[/bold red] Nenhuma partição Parquet encontrada em '{processed_dir}' "
+            f"para o ano {ano}. Execute 'virada normalize' com os dados brutos primeiro."
+        )
+        raise typer.Exit(code=1)
 
     consolidator = DuckDbConsolidator(db_path=db_path)
     count = consolidator.consolidate_from_parquet(pattern)
@@ -242,9 +314,37 @@ def run_all(
         "data/export"
     ),
 ) -> None:
-    """Orquestra sequencialmente: normalize -> consolidate -> export -> verify."""
+    """Orquestra sequencialmente: normalize -> consolidate -> export -> verify.
+
+    Args:
+        ano: Ano eleitoral analisado (padrão: 2022).
+        uf: Sigla da UF ou ALL para processar todas as UFs.
+        raw_dir: Diretório de dados brutos onde os BUs estão armazenados.
+        processed_dir: Diretório das partições Parquet geradas.
+        db_path: Caminho do banco DuckDB consolidado.
+        export_dir: Diretório de destino dos artefatos estáticos JSON e Wasm.
+
+    Returns:
+        None
+
+    Raises:
+        typer.Exit: Caso nenhuma seção seja pareada durante a normalização.
+    """
     console.print("[bold green]=== INICIANDO PIPELINE COMPLETO VIRADA ELEITORAL ===[/bold green]")
-    normalize(ano=ano, uf=uf, raw_dir=raw_dir, processed_dir=processed_dir)
+    paired_count = normalize(ano=ano, uf=uf, raw_dir=raw_dir, processed_dir=processed_dir)
+    if paired_count == 0:
+        console.print(
+            "\n[bold red]Interrompendo pipeline:[/bold red] Nenhuma seção eleitoral foi pareada.\n"
+            f"Certifique-se de que os arquivos de BU do TSE (ex.: bweb_1t_*.zip e bweb_2t_*.zip) "
+            f"estejam presentes em '{raw_dir}' para o ano {ano}.\n\n"
+            "[bold cyan]Dica:[/bold cyan] Para testar o pipeline com dados sintéticos "
+            "das 10 fixtures áureas, gere os arquivos de demonstração com:\n"
+            "  [bold yellow]uv run virada seed-sample[/bold yellow]\n"
+            "E em seguida execute o pipeline novamente:\n"
+            "  [bold yellow]uv run virada run-all --ano 2022 --uf ALL[/bold yellow]\n"
+        )
+        raise typer.Exit(code=1)
+
     consolidate(ano=ano, processed_dir=processed_dir, db_path=db_path)
     export(ano=ano, db_path=db_path, out_dir=export_dir)
     verify(db_path=db_path, export_dir=export_dir)
