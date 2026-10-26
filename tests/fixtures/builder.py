@@ -296,10 +296,10 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FORTALEZA",
         1,
         107,
-        {13: 80, 22: 80, 12: 35, 15: 25, 95: 5, 96: 5},
+        {13: 70, 22: 80, 12: 35, 15: 25, 95: 5, 96: 5},
         aptos=280,
-        comparecimento=230,
-        abstencao=50,
+        comparecimento=220,
+        abstencao=60,
     )
     f07_2t = _create_bu_rows(
         "CE",
@@ -307,10 +307,10 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FORTALEZA",
         1,
         107,
-        {13: 130, 22: 90, 95: 6, 96: 4},
+        {13: 120, 22: 90, 95: 6, 96: 4},
         aptos=280,
-        comparecimento=230,
-        abstencao=50,
+        comparecimento=220,
+        abstencao=60,
     )
     fixtures["FX-07"] = GoldenFixture(
         fixture_id="FX-07",
@@ -318,7 +318,7 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         expected_classification=TurnoverClassification.VIRADA_LULA,
         expected_status_pareamento=PairingStatus.PAREADA_AMBOS,
         expected_delta_votos_lula=50,
-        expected_delta_margem=40,  # (130 - 90) - (80 - 80) = 40 - 0 = 40
+        expected_delta_margem=40,  # (120 - 90) - (70 - 80) = 30 - (-10) = 40
         rows_1t=f07_1t,
         rows_2t=f07_2t,
     )
