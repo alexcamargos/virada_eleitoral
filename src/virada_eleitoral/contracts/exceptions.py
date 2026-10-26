@@ -81,16 +81,30 @@ class AnalyticsError(ViradaEleitoralError):
 class InvariantViolationError(AnalyticsError):
     """Lançada quando uma invariante matemática mandatória for violada."""
 
-    def __init__(self, invariant_name: str, details: str) -> None:
+    def __init__(self, invariant_name: str, details: str = "") -> None:
         """Inicializa a exceção com o nome da invariante e detalhes numéricos.
 
         Args:
             invariant_name: Identificador da invariante quebrada.
             details: Descrição e valores dos operandos divergentes.
         """
-        super().__init__(f"Violação da invariante matemática '{invariant_name}': {details}")
+        msg = f"Violação da invariante matemática '{invariant_name}'"
+        if details:
+            msg += f": {details}"
+        super().__init__(msg)
         self.invariant_name = invariant_name
         self.details = details
+
+
+MathematicalInvariantViolationError = InvariantViolationError
+
+
+class DataIntegrityError(AnalyticsError):
+    """Lançada quando dados esperados para consolidação estão vazios ou corrompidos."""
+
+
+class StorageBudgetExceededError(AnalyticsError):
+    """Lançada quando o banco consolidado excede o teto de armazenamento do SLA."""
 
 
 class ExportError(ViradaEleitoralError):
