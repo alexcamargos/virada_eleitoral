@@ -1,0 +1,51 @@
+"""Subpacote de contratos imutáveis, modelos de handoff e exceções canônicas."""
+
+from virada_eleitoral.contracts.exceptions import (
+    AnalyticsError,
+    ConfigurationError,
+    CorruptBuArchiveError,
+    ExportError,
+    HarvesterError,
+    HashMismatchError,
+    InvariantViolationError,
+    NormalizerError,
+    ResourceNotFoundError,
+    SchemaValidationError,
+    ViradaEleitoralError,
+)
+from virada_eleitoral.contracts.models import (
+    HarvestManifest,
+    NationalSummaryPayload,
+    PairingStatus,
+    RawBuFileBundle,
+    SectionTurnoverRecord,
+    SectionVotes1T,
+    SectionVotes2T,
+    StateSummaryItem,
+    SwingCityPayload,
+    TurnoverClassification,
+)
+
+__all__ = [
+    "AnalyticsError",
+    "ConfigurationError",
+    "CorruptBuArchiveError",
+    "ExportError",
+    "HarvestManifest",
+    "HarvesterError",
+    "HashMismatchError",
+    "InvariantViolationError",
+    "NationalSummaryPayload",
+    "NormalizerError",
+    "PairingStatus",
+    "RawBuFileBundle",
+    "ResourceNotFoundError",
+    "SchemaValidationError",
+    "SectionTurnoverRecord",
+    "SectionVotes1T",
+    "SectionVotes2T",
+    "StateSummaryItem",
+    "SwingCityPayload",
+    "TurnoverClassification",
+    "ViradaEleitoralError",
+]
