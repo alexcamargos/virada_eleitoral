@@ -1,7 +1,8 @@
 # Especificação 05: Testes, Fixtures Áureas, CLI e Roadmap de Execução SDD
 
 **Agentes Responsáveis:** `agent-qa-verifier` e agentes executores  
-**Requisitos Cobertos:** `REQ-QA-01` e governança de qualidade
+**Requisitos Cobertos:** `REQ-QA-01` e governança de qualidade  
+**Escopo Mandatório:** Eleição Presidencial de 2026 (2º turno: 25/10/2026 — Luiz Inácio Lula da Silva vs. Flávio Bolsonaro)
 
 ---
 
@@ -27,11 +28,11 @@ Antes de conectar o pipeline a dados brutos do TSE, toda a lógica de filtragem,
 ## 2. Critérios de Aceite Comportamentais (BDD / Gherkin)
 
 ```gherkin
-Funcionalidade: Pareamento e classificação de viradas eleitorais entre turnos
+Funcionalidade: Pareamento e classificação de viradas eleitorais entre turnos (Eleições 2026)
 
   Cenário: Classificação de virada de urna com absorção de votos de terceiros
-    Dado um Boletim de Urna do 1º turno onde Lula teve 100 votos, Bolsonaro 120 e outros candidatos 50
-    E o Boletim de Urna correspondente do 2º turno onde Lula teve 140 votos e Bolsonaro 130
+    Dado um Boletim de Urna do 1º turno onde Lula teve 100 votos, Flávio Bolsonaro 120 e outros candidatos 50
+    E o Boletim de Urna correspondente do 2º turno onde Lula teve 140 votos e Flávio Bolsonaro 130
     Quando o agent-normalizer e agent-analytics processarem a seção
     Então a chave de pareamento deve possuir status "PAREADA_AMBOS"
     E a classificacao_virada da urna deve ser "VIRADA_LULA"
@@ -53,12 +54,12 @@ A CLI unificada é implementada em `src/virada_eleitoral/cli.py` utilizando `typ
 
 | Comando | Argumentos Principais | Responsabilidade |
 | :--- | :--- | :--- |
-| `virada harvest` | `--ano 2022`, `--turno [1\|2]`, `--uf [UF\|ALL]`, `--input-dir` | Coleta os arquivos CSV/ZIP do TSE e gera manifesto de integridade. |
-| `virada normalize` | `--ano 2022`, `--uf [UF\|ALL]`, `--input-dir` | Filtra cargo Presidente, pivota candidatos e efetua o pareamento 1T x 2T. |
-| `virada consolidate` | `--ano 2022`, `--db-path data/virada_eleitoral.duckdb` | Consolida os Parquets gerados no DuckDB e computa as visões analíticas. |
-| `virada export` | `--ano 2022`, `--db-path`, `--out-dir data/export` | Exporta os arquivos JSON estáticos e cruza com a malha TopoJSON do IBGE. |
+| `virada harvest` | `--ano 2026`, `--turno [1\|2]`, `--uf [UF\|ALL]`, `--input-dir` | Coleta os arquivos CSV/ZIP do TSE (2026) e gera manifesto de integridade. |
+| `virada normalize` | `--ano 2026`, `--uf [UF\|ALL]`, `--input-dir` | Filtra cargo Presidente, pivota candidatos (Lula x Flávio Bolsonaro) e pareia 1T x 2T. |
+| `virada consolidate` | `--ano 2026`, `--db-path data/virada_eleitoral.duckdb` | Consolida os Parquets gerados no DuckDB e computa as visões analíticas. |
+| `virada export` | `--ano 2026`, `--db-path`, `--out-dir data/export` | Exporta os arquivos JSON (resumos, fluxo Sankey) e TopoJSON IBGE. |
 | `virada verify` | `--db-path`, `--json-dir` | Executa bateria de checagem pós-execução das 5 invariantes matemáticas. |
-| `virada run-all` | `--ano 2022`, `--uf [UF\|ALL]`, `--input-dir` | Orquestra sequencialmente: `harvest` -> `normalize` -> `consolidate` -> `export` -> `verify`. |
+| `virada run-all` | `--ano 2026`, `--uf [UF\|ALL]`, `--input-dir` | Orquestra sequencialmente: `harvest` -> `normalize` -> `consolidate` -> `export` -> `verify`. |
 
 ---
 
