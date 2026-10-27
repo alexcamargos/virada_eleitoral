@@ -289,3 +289,30 @@ def test_compute_regression_trendline_and_scatter_payload(
     assert payload.regressao.total_secoes_modelo >= len(both_df)
     assert len(payload.pontos_amostra) <= 10
     assert len(payload.pontos_amostra) > 0
+
+
+def test_southeast_deep_dive_view_and_method(golden_paired_df: pl.DataFrame) -> None:
+    """Valida a view states_deep_dive_southeast e o payload do GEO-PILAR 3."""
+    consolidator = DuckDbConsolidator()
+    consolidator.consolidate_from_dataframe(golden_paired_df)
+
+    rows = consolidator.conn.execute("SELECT * FROM states_deep_dive_southeast").fetchall()
+    assert len(rows) > 0
+
+    payload = consolidator.get_southeast_deep_dive(ano=2026)
+    assert payload.ano_eleicao == 2026
+    assert len(payload.estados) > 0
+    consolidator.close()
+
+
+def test_candidate_advance_bubble_metrics_view(golden_paired_df: pl.DataFrame) -> None:
+    """Valida a view candidate_advance_bubble_metrics e categorização de desempenho."""
+    consolidator = DuckDbConsolidator()
+    consolidator.consolidate_from_dataframe(golden_paired_df)
+
+    rows = consolidator.conn.execute(
+        "SELECT nm_municipio, delta_pp_lula, delta_pp_flavio, categoria_desempenho_flavio "
+        "FROM candidate_advance_bubble_metrics"
+    ).fetchall()
+    assert len(rows) > 0
+    consolidator.close()

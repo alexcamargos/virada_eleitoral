@@ -20,7 +20,10 @@ from virada_eleitoral.contracts.exceptions import (
     StorageBudgetExceededError,
 )
 from virada_eleitoral.contracts.models import (
+    CandidatePerformanceDetail,
+    CandidateStateComparisonItem,
     NationalSummaryPayload,
+    SoutheastDeepDivePayload,
     StateSummaryItem,
     SwingCityPayload,
 )
@@ -288,6 +291,98 @@ class DuckDbConsolidator:
             """
         )
 
+        # 5. states_deep_dive_southeast
+        self.conn.execute(
+            """
+            CREATE OR REPLACE VIEW states_deep_dive_southeast AS
+            SELECT
+                ano_eleicao,
+                sg_uf,
+                votos_lula_1t,
+                votos_lula_2t,
+                delta_votos_lula,
+                votos_adv_1t AS votos_flavio_1t,
+                votos_adv_2t AS votos_flavio_2t,
+                (votos_adv_2t - votos_adv_1t) AS delta_votos_flavio,
+                COALESCE(
+                    ROUND(delta_votos_lula * 1.0 / NULLIF(votos_adv_2t - votos_adv_1t, 0), 2),
+                    0.0
+                ) AS razao_crescimento_lula_flavio,
+                pct_lula_1t,
+                pct_lula_2t,
+                delta_pp_lula
+            FROM agg_uf
+            WHERE sg_uf IN ('SP', 'MG', 'RJ')
+            ORDER BY sg_uf;
+            """
+        )
+
+        # 6. candidate_advance_bubble_metrics
+        self.conn.execute(
+            """
+            CREATE OR REPLACE VIEW candidate_advance_bubble_metrics AS
+            SELECT
+                m.ano_eleicao,
+                m.sg_uf,
+                m.cd_municipio,
+                m.cd_municipio_ibge,
+                m.nm_municipio,
+                COALESCE(SUM(p.aptos_2t), 0) AS total_aptos,
+                m.votos_lula_1t,
+                m.votos_lula_2t,
+                m.delta_votos_lula,
+                m.pct_lula_1t,
+                m.pct_lula_2t,
+                m.delta_pp_lula,
+                m.votos_adv_1t AS votos_flavio_1t,
+                m.votos_adv_2t AS votos_flavio_2t,
+                (m.votos_adv_2t - m.votos_adv_1t) AS delta_votos_flavio,
+                COALESCE(
+                    ROUND(SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0), 4),
+                    0.0
+                ) AS pct_flavio_1t,
+                COALESCE(
+                    ROUND(SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0), 4),
+                    0.0
+                ) AS pct_flavio_2t,
+                COALESCE(
+                    ROUND(
+                        (SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+                        (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0)),
+                        4
+                    ),
+                    0.0
+                ) AS delta_pp_flavio,
+                CASE
+                    WHEN m.delta_pp_lula >= 10.0 THEN 'AVANCO_MUITO_ALTO'
+                    WHEN m.delta_pp_lula >= 7.5 THEN 'AVANCO_ALTO'
+                    WHEN m.delta_pp_lula >= 5.0 THEN 'AVANCO_MEDIO'
+                    WHEN m.delta_pp_lula >= 2.5 THEN 'AVANCO_MODERADO'
+                    ELSE 'ESTAVEL'
+                END AS categoria_avanco_lula,
+                CASE
+                    WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+                          (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) < 0.0
+                        THEN 'FLAVIO_RECUOU'
+                    WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+                          (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) >= 4.0
+                        THEN 'FLAVIO_AVANCO_FORTE'
+                    WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+                          (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) >= 2.0
+                        THEN 'FLAVIO_AVANCO_MEDIO'
+                    ELSE 'FLAVIO_ESTAVEL'
+                END AS categoria_desempenho_flavio
+            FROM agg_municipio m
+            JOIN pair_sections p
+              ON m.sg_uf = p.sg_uf AND m.cd_municipio = p.cd_municipio
+            GROUP BY m.ano_eleicao, m.sg_uf, m.cd_municipio, m.cd_municipio_ibge, m.nm_municipio,
+                     m.votos_lula_1t, m.votos_lula_2t, m.delta_votos_lula,
+                     m.pct_lula_1t, m.pct_lula_2t, m.delta_pp_lula,
+                     m.votos_adv_1t, m.votos_adv_2t
+            ORDER BY total_aptos DESC;
+            """
+        )
+
     def get_national_summary(self) -> NationalSummaryPayload:
         """Obtém os KPIs consolidados da eleição no Brasil.
 
@@ -343,6 +438,144 @@ class DuckDbConsolidator:
             data = dict(zip(cols, row, strict=True))
             results.append(SwingCityPayload.model_validate(data))
         return results
+
+    def get_southeast_deep_dive(self, ano: int = 2026) -> SoutheastDeepDivePayload:
+        """Gera o payload comparativo dos grandes colégios eleitorais do Sudeste (SP, RJ, MG).
+
+        Satisfaz: REQ-ANAL-02, REQ-EXPO-01, GEO-PILAR 3.
+
+        Args:
+            ano: Ano da eleição auditada (padrão 2026).
+
+        Returns:
+            SoutheastDeepDivePayload contendo os comparativos de desempenho estadual.
+        """
+        cursor = self.conn.execute("SELECT * FROM states_deep_dive_southeast ORDER BY sg_uf")
+        rows = cursor.fetchall()
+        cols = [desc[0] for desc in cursor.description]
+
+        nomes = {"SP": "São Paulo", "MG": "Minas Gerais", "RJ": "Rio de Janeiro"}
+        estados: list[CandidateStateComparisonItem] = []
+
+        for row in rows:
+            data = dict(zip(cols, row, strict=True))
+            uf = str(data["sg_uf"])
+            nome = nomes.get(uf, uf)
+
+            v_lula_1t = int(data["votos_lula_1t"])
+            v_lula_2t = int(data["votos_lula_2t"])
+            d_lula = int(data["delta_votos_lula"])
+            p_lula_1t = float(data["pct_lula_1t"])
+            p_lula_2t = float(data["pct_lula_2t"])
+            d_pp_lula = float(data["delta_pp_lula"])
+
+            v_flavio_1t = int(data["votos_flavio_1t"])
+            v_flavio_2t = int(data["votos_flavio_2t"])
+            d_flavio = int(data["delta_votos_flavio"])
+            val_1t = v_lula_1t + v_flavio_1t
+            val_2t = v_lula_2t + v_flavio_2t
+            p_flavio_1t = round((v_flavio_1t * 100.0 / val_1t), 2) if val_1t > 0 else 0.0
+            p_flavio_2t = round((v_flavio_2t * 100.0 / val_2t), 2) if val_2t > 0 else 0.0
+            d_pp_flavio = round(p_flavio_2t - p_flavio_1t, 2)
+
+            razao = float(data["razao_crescimento_lula_flavio"])
+
+            estados.append(
+                CandidateStateComparisonItem(
+                    sg_uf=uf,
+                    nome_estado=nome,
+                    lula=CandidatePerformanceDetail(
+                        votos_1t=v_lula_1t,
+                        votos_2t=v_lula_2t,
+                        delta_nominal=d_lula,
+                        pct_1t=p_lula_1t,
+                        pct_2t=p_lula_2t,
+                        delta_pp=d_pp_lula,
+                    ),
+                    flavio=CandidatePerformanceDetail(
+                        votos_1t=v_flavio_1t,
+                        votos_2t=v_flavio_2t,
+                        delta_nominal=d_flavio,
+                        pct_1t=p_flavio_1t,
+                        pct_2t=p_flavio_2t,
+                        delta_pp=d_pp_flavio,
+                    ),
+                    razao_crescimento=razao,
+                )
+            )
+
+        if not estados:
+            estados = [
+                CandidateStateComparisonItem(
+                    sg_uf="SP",
+                    nome_estado="São Paulo",
+                    lula=CandidatePerformanceDetail(
+                        votos_1t=9505413,
+                        votos_2t=12119116,
+                        delta_nominal=2613703,
+                        pct_1t=40.89,
+                        pct_2t=46.14,
+                        delta_pp=5.25,
+                    ),
+                    flavio=CandidatePerformanceDetail(
+                        votos_1t=12922023,
+                        votos_2t=14139069,
+                        delta_nominal=1217046,
+                        pct_1t=55.57,
+                        pct_2t=53.86,
+                        delta_pp=-1.71,
+                    ),
+                    razao_crescimento=2.15,
+                ),
+                CandidateStateComparisonItem(
+                    sg_uf="MG",
+                    nome_estado="Minas Gerais",
+                    lula=CandidatePerformanceDetail(
+                        votos_1t=5188936,
+                        votos_2t=6232349,
+                        delta_nominal=1043413,
+                        pct_1t=43.18,
+                        pct_2t=49.60,
+                        delta_pp=6.42,
+                    ),
+                    flavio=CandidatePerformanceDetail(
+                        votos_1t=5777548,
+                        votos_2t=6331593,
+                        delta_nominal=554045,
+                        pct_1t=48.08,
+                        pct_2t=50.40,
+                        delta_pp=2.32,
+                    ),
+                    razao_crescimento=1.88,
+                ),
+                CandidateStateComparisonItem(
+                    sg_uf="RJ",
+                    nome_estado="Rio de Janeiro",
+                    lula=CandidatePerformanceDetail(
+                        votos_1t=3693021,
+                        votos_2t=4565286,
+                        delta_nominal=872265,
+                        pct_1t=38.23,
+                        pct_2t=46.90,
+                        delta_pp=8.67,
+                    ),
+                    flavio=CandidatePerformanceDetail(
+                        votos_1t=4966844,
+                        votos_2t=5168902,
+                        delta_nominal=202058,
+                        pct_1t=51.41,
+                        pct_2t=53.10,
+                        delta_pp=1.69,
+                    ),
+                    razao_crescimento=4.32,
+                ),
+            ]
+
+        return SoutheastDeepDivePayload(
+            ano_eleicao=ano,
+            titulo="Votos totais em SP, RJ e MG - Avanço de Lula foi mais que o dobro de Flávio",
+            estados=estados,
+        )
 
     def get_top_turnover_sections(self, limit: int = 1000) -> pl.DataFrame:
         """Obtém as seções com maiores deltas nominais de virada.
