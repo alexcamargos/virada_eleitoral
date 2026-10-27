@@ -172,6 +172,59 @@ def download(
     )
 
 
+@app.command(name="scrape-2t")
+def scrape_2t(
+    ano: Annotated[int, typer.Option(help="Ano eleitoral.")] = 2026,
+    uf: Annotated[str, typer.Option(help="Sigla da UF (ex: AC, SP, RJ, BA).")] = "AC",
+    out_dir: Annotated[Path, typer.Option(help="Diretório onde o CSV gerado será salvo.")] = Path(
+        "data/raw"
+    ),
+    concurrency: Annotated[
+        int, typer.Option(help="Número de requisições simultâneas ao TSE.")
+    ] = 10,
+) -> Path:
+    """Coleta BUs do 2º turno diretamente dos endpoints de urna do TSE e gera o CSV oficial.
+
+    Args:
+        ano: Ano da eleição (padrão: 2026).
+        uf: Sigla da Unidade da Federação a extrair (ex: AC).
+        out_dir: Diretório de destino do arquivo bweb_2t_{uf}_{ano}.csv.
+        concurrency: Nível de concorrência assíncrona.
+
+    Returns:
+        Path: Caminho do arquivo CSV gerado em disco.
+
+    Raises:
+        typer.Exit: Caso ocorra erro na coleta das urnas.
+    """
+    console.print(
+        f"[bold blue]Iniciando coleta em tempo real de BUs do 2º Turno "
+        f"(Ano {ano}, UF {uf.upper()})...[/bold blue]"
+    )
+    from virada_eleitoral.harvester.realtime_scraper import scrape_uf_2t_bu_dataset
+
+    ciclo = f"ele{ano}"
+    pleito = 3221 if ano == 2026 else 407
+
+    try:
+        csv_path: Path = scrape_uf_2t_bu_dataset(
+            ciclo=ciclo,
+            pleito=pleito,
+            uf=uf.upper(),
+            out_dir=out_dir,
+            max_workers=concurrency,
+        )
+    except Exception as err:
+        console.print(f"[bold red]Erro na coleta de BUs:[/bold red] {err}")
+        raise typer.Exit(code=1) from err
+
+    console.print(
+        f"[green]Coleta concluída com sucesso![/green] "
+        f"Arquivo disponível em: [bold]{csv_path}[/bold]"
+    )
+    return csv_path
+
+
 @app.command(name="seed-sample")
 def seed_sample(
     out_dir: Annotated[
@@ -256,11 +309,24 @@ def normalize(
     if uf.upper() != "ALL":
         ufs_to_process = [u for u in ufs_to_process if u == uf.upper()]
 
+    from virada_eleitoral.harvester.local_provider import LocalBuProvider
+
     total_paired = 0
+    provider = LocalBuProvider(raw_dir)
+    extracted_dir = raw_dir / "extracted"
+
     for current_uf in ufs_to_process:
         console.print(f"Normalizando UF [bold]{current_uf}[/bold]...")
-        df_1t = pivot_presidential_bu(map_1t[current_uf], ano=ano, turno=1)
-        df_2t = pivot_presidential_bu(map_2t[current_uf], ano=ano, turno=2)
+        path_1t = map_1t[current_uf]
+        path_2t = map_2t[current_uf]
+
+        if provider.is_zip_file(path_1t):
+            path_1t = provider.extract_csv_from_zip(path_1t, extracted_dir)
+        if provider.is_zip_file(path_2t):
+            path_2t = provider.extract_csv_from_zip(path_2t, extracted_dir)
+
+        df_1t = pivot_presidential_bu(path_1t, ano=ano, turno=1)
+        df_2t = pivot_presidential_bu(path_2t, ano=ano, turno=2)
         paired_df, _ = pair_turnover_sections(df_1t, df_2t, ano=ano)
 
         write_partitioned_parquet(paired_df, processed_dir, ano=ano, uf=current_uf)
@@ -444,6 +510,52 @@ def run_all(
     export(ano=ano, db_path=db_path, out_dir=export_dir)
     verify(db_path=db_path, export_dir=export_dir)
     console.print("[bold green]=== PIPELINE CONCLUÍDO COM SUCESSO! ===[/bold green]")
+
+
+@app.command(name="serve")
+def serve(
+    port: Annotated[int, typer.Option(help="Porta TCP do servidor local.")] = 8080,
+    host: Annotated[str, typer.Option(help="Host IP do servidor local.")] = "127.0.0.1",
+    no_browser: Annotated[
+        bool, typer.Option(help="Não abrir o navegador automaticamente.")
+    ] = False,
+) -> None:
+    """Inicia um servidor web local para visualizar o painel interativo de viradas eleitorais.
+
+    Args:
+        port: Porta TCP na qual o servidor HTTP será executado.
+        host: Endereço IP do host (padrão: 127.0.0.1).
+        no_browser: Se verdadeiro, desativa a abertura automática do navegador.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    import functools
+    import http.server
+    import webbrowser
+
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=".")
+    server_url = f"http://{host}:{port}/frontend/"
+
+    console.print(
+        f"[bold green]=== SERVIDOR VISUAL VIRADA ELEITORAL ===[/bold green]\n"
+        f"Painel interativo disponível em: [bold cyan]{server_url}[/bold cyan]\n"
+        f"Pressione [bold yellow]Ctrl+C[/bold yellow] para encerrar."
+    )
+
+    if not no_browser:
+        webbrowser.open(server_url)
+
+    server = http.server.ThreadingHTTPServer((host, port), handler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Servidor encerrado.[/yellow]")
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":
