@@ -44,6 +44,18 @@ Funcionalidade: Pareamento e classificação de viradas eleitorais entre turnos 
     Quando for gerada a view agg_municipio
     Então a soma de votos_lula_1t de todas as seções deve ser exatamente igual a total_lula_1t do município
     E a soma de votos_lula_2t deve ser exatamente igual a total_lula_2t do município
+
+  Cenário: Conservação matemática da cascata de saldo líquido (Waterfall Invariant)
+    Dado o cálculo de saldo líquido por grupo de origem do 1º turno
+    Quando for gerado o payload waterfall_turnover_balance.json
+    Então a soma dos saldos líquidos de todos os degraus deve ser rigorosamente igual a delta_margem nacional
+    E a diferença_2t menos a diferença_1t deve coincidir com o somatório dos degraus
+
+  Cenário: Conservação da matriz de transição de votos (Sankey / Inferência Ecológica)
+    Dado o modelo de inferência ecológica sobre as seções eleitorais
+    Quando for gerado o payload sankey_vote_flows.json
+    Então cada grupo de origem do 1T deve ter 100% de seus eleitores distribuídos entre os destinos do 2T
+    E o somatório dos fluxos para o destino Lula deve ser igual aos novos votos de Lula no 2T
 ```
 
 ---
