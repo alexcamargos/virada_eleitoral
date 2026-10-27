@@ -3,193 +3,601 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virada Eleitoral 2026 — Auditoria Técnica e Comparativo 1T x 2T</title>
+  <title>Virada Eleitoral 2026 | Auditoria Técnica e Comparativo 1T x 2T (TSE)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-    .font-mono { font-family: 'JetBrains Mono', monospace; }
-    
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-    /* Transitions & Glows */
-    .tab-btn.active {
-      background-color: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border-color: rgba(16, 185, 129, 0.4);
+    :root {
+      --app-bg: #121417;
+      --card-bg: #181B20;
+      --card-border: #282D37;
+      --surface-sub: #14171C;
+      --surface-sub2: #20242C;
+      --surface-track: #242933;
+      --primary-accent: #38BDF8;
+      --primary-accent-bg: rgba(56, 189, 248, 0.12);
+      --color-lula: #EF4444;
+      --color-lula-tint: rgba(239, 68, 68, 0.15);
+      --color-flavio: #3B82F6;
+      --color-flavio-tint: rgba(59, 130, 246, 0.15);
+      --color-success: #10B981;
+      --color-warning: #F59E0B;
+      --color-warning-tint: rgba(245, 158, 11, 0.12);
+      --text-primary: #F8FAFC;
+      --text-title: #F1F5F9;
+      --text-secondary: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-subtle: #64748B;
     }
+
+    body {
+      background-color: var(--app-bg);
+      color: var(--text-secondary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+    }
+
+    .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "JetBrains Mono", monospace;
+    }
+
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #121417; }
+    ::-webkit-scrollbar-thumb { background: #282D37; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38BDF8; }
+
+    /* Cabeçalho superior e breadcrumbs (padrão Margem Eleitoral) */
+    .breadcrumb-text {
+      color: #94A3B8;
+      font-size: 13px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .main-header-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #F8FAFC;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    /* Banner de contexto oficial da eleição (TSE) */
+    .tse-summary-card {
+      background-color: #181B20;
+      border: 1px solid #282D37;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+      box-sizing: border-box;
+    }
+    .tse-summary-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #F1F5F9;
+      margin-bottom: 6px;
+    }
+    .tse-summary-stats {
+      color: #94A3B8;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Abas estilo Streamlit Tabs */
+    .st-tabs-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid #282D37;
+      overflow-x: auto;
+      padding-bottom: 0px;
+    }
+    .tab-btn {
+      background-color: #181B20;
+      border: 1px solid #282D37;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: #CBD5E1;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover {
+      background-color: #1F242D;
+      color: #F8FAFC;
+    }
+    .tab-btn.active {
+      background-color: #242933;
+      color: #38BDF8;
+      border-color: #282D37;
+      border-top: 1px solid #38BDF8;
+      border-bottom: 2px solid #38BDF8;
+      font-weight: 700;
+    }
+
+    /* Hero Executive Storytelling Cards */
+    .hero-card {
+      background-color: #181B20;
+      border: 1px solid #282D37;
+      border-radius: 12px;
+      padding: 20px 22px;
+      height: 100%;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .hero-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
+    .hero-candidates-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .hero-cand-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #F1F5F9;
+    }
+    .hero-cand-party {
+      font-size: 11px;
+      color: #94A3B8;
+      background-color: #242933;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .hero-cand-val {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .hero-cand-val-sub {
+      font-size: 11.5px;
+      color: #94A3B8;
+      margin-top: 3px;
+    }
+    .hero-vs-badge {
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748B;
+    }
+    .hero-bar-track {
+      position: relative;
+      width: 100%;
+      height: 14px;
+      border-radius: 7px;
+      background-color: #242933;
+      display: flex;
+      margin: 18px 0 8px 0;
+    }
+    .hero-bar-split {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .hero-bar-threshold {
+      position: absolute;
+      left: 50%;
+      top: -4px;
+      bottom: -4px;
+      width: 2px;
+      border-left: 2px dashed #FFFFFF;
+      z-index: 5;
+    }
+    .hero-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: #94A3B8;
+      margin-top: 6px;
+    }
+    .hero-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      background-color: #20242C;
+      border: 1px solid #333A48;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #CBD5E1;
+    }
+    .hero-pill-highlight {
+      background-color: rgba(56, 189, 248, 0.12);
+      border: 1px solid #38BDF8;
+      color: #38BDF8;
+    }
+    .hero-pill-tie {
+      background-color: rgba(245, 158, 11, 0.12);
+      border: 1px solid #F59E0B;
+      color: #FCD34D;
+    }
+    .hero-pill-red {
+      background-color: rgba(239, 68, 68, 0.12);
+      border: 1px solid #EF4444;
+      color: #FCA5A5;
+    }
+
+    /* Seção "A CONTA" e badges com traço vertical */
+    .conta-container {
+      background-color: #181B20;
+      border: 1px solid #282D37;
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin-bottom: 24px;
+      box-sizing: border-box;
+    }
+    .conta-section-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conta-section-badge::before {
+      content: "";
+      display: inline-block;
+      width: 3px;
+      height: 12px;
+      background-color: #38BDF8;
+      border-radius: 2px;
+    }
+    .conta-main-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #F8FAFC;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+    .conta-subtitle {
+      font-size: 13px;
+      color: #94A3B8;
+      line-height: 1.45;
+    }
+    .conta-instruction {
+      font-size: 12.5px;
+      color: #94A3B8;
+      margin: 14px 0 16px 0;
+      line-height: 1.5;
+      padding-top: 10px;
+      border-top: 1px solid #242933;
+    }
+    .conta-formula-card {
+      background-color: #14171C;
+      border: 1px solid #282D37;
+      border-radius: 8px;
+      padding: 12px 18px;
+      display: inline-block;
+      margin-top: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #F8FAFC;
+    }
+    .conta-footer-note {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    /* Sankey link transitions */
     .sankey-link {
       transition: fill-opacity 0.2s, stroke-opacity 0.2s;
     }
     .sankey-link:hover {
       fill-opacity: 0.85 !important;
     }
+
+    /* Inputs e Controles estilizados como Streamlit */
+    input[type="text"], select {
+      background-color: #181B20 !important;
+      border: 1px solid #282D37 !important;
+      color: #E2E8F0 !important;
+      border-radius: 6px !important;
+      outline: none !important;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: #38BDF8 !important;
+      box-shadow: 0 0 0 1px #38BDF8;
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-emerald-500 selection:text-white">
+<body class="selection:bg-sky-500 selection:text-white min-h-screen">
 
-  <!-- Header Fixo -->
-  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50">
+  <!-- Header Superior Fixo -->
+  <header class="border-b border-[#282D37] bg-[#14171C]/95 backdrop-blur sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between flex-wrap gap-3">
-      <div class="flex items-center space-x-3">
-        <span class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20 shadow-inner">
-          <i class="fa-solid fa-chart-line text-lg"></i>
-        </span>
-        <div>
-          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            Virada Eleitoral 2026
-            <span class="px-2 py-0.5 text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
-              2º Turno Oficial • 25/10/2026
-            </span>
-          </h1>
-          <p class="text-xs text-slate-400">Auditoria Técnica, Modelagem OLAP e Decomposição de Votos (TSE)</p>
+      
+      <div>
+        <div class="breadcrumb-text">
+          <i class="fa-solid fa-scale-balanced text-sky-400"></i>
+          <span>Auditoria Oficial TSE • Eleições Presidenciais 2026</span>
+          <span class="text-slate-600">&gt;</span>
+          <span class="text-slate-300 font-semibold">2º Turno Oficial (25/10/2026)</span>
         </div>
+        <h1 class="main-header-title flex items-center gap-2">
+          Virada Eleitoral 2026
+          <span class="px-2 py-0.5 text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/25 rounded-md">
+            Auditoria Técnica & Decomposição
+          </span>
+        </h1>
       </div>
 
       <div class="flex items-center space-x-3">
-        <span id="data-status-badge" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800/80 text-emerald-400 border border-slate-700">
-          <span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Todas as UFs Carregadas
+        <span id="data-status-badge" class="hero-pill hero-pill-highlight">
+          <span class="w-2 h-2 mr-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+          27 UFs Carregadas
         </span>
-        <button onclick="reloadAllData()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-arrows-rotate"></i> Recarregar
+        <button onclick="reloadAllData()" class="px-3 py-1.5 text-xs font-semibold bg-[#181B20] hover:bg-[#20242C] text-slate-200 rounded-lg border border-[#282D37] transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-arrows-rotate text-sky-400"></i> Recarregar
         </button>
       </div>
     </div>
 
-    <!-- Navegação por Abas -->
-    <div class="border-t border-slate-800/70 bg-slate-950/70">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-2 overflow-x-auto py-2">
-        <button onclick="switchTab('overview')" id="btn-tab-overview" class="tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-gauge-high"></i> Visão Geral & KPIs
-        </button>
-        <button onclick="switchTab('pillars')" id="btn-tab-pillars" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-diagram-project text-emerald-400"></i> Os 4 Pilares da Virada
-        </button>
-        <button onclick="switchTab('states')" id="btn-tab-states" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-map text-indigo-400"></i> Comparativo de Estados
-        </button>
-        <button onclick="switchTab('cities')" id="btn-tab-cities" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-city text-amber-400"></i> Comparativo de Municípios
-        </button>
-        <button onclick="switchTab('diptych')" id="btn-tab-diptych" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-circle-dot text-rose-400"></i> Metrópoles & Bolhas Ponderadas
-        </button>
-        <button onclick="switchTab('sections')" id="btn-tab-sections" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-transparent hover:text-slate-200 transition whitespace-nowrap flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-sky-400"></i> Auditoria de Urnas
-        </button>
+    <!-- Navegação por Abas (Streamlit-styled Tabs) -->
+    <div class="border-t border-[#282D37] bg-[#121417]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="st-tabs-bar">
+          <button onclick="switchTab('overview')" id="btn-tab-overview" class="tab-btn active">
+            <i class="fa-solid fa-gauge-high"></i> Visão Geral & Hero Cards
+          </button>
+          <button onclick="switchTab('pillars')" id="btn-tab-pillars" class="tab-btn">
+            <i class="fa-solid fa-sitemap text-sky-400"></i> Os 4 Pilares da Virada
+          </button>
+          <button onclick="switchTab('states')" id="btn-tab-states" class="tab-btn">
+            <i class="fa-solid fa-map text-indigo-400"></i> Comparativo de Estados
+          </button>
+          <button onclick="switchTab('cities')" id="btn-tab-cities" class="tab-btn">
+            <i class="fa-solid fa-city text-amber-400"></i> Comparativo de Municípios
+          </button>
+          <button onclick="switchTab('diptych')" id="btn-tab-diptych" class="tab-btn">
+            <i class="fa-solid fa-circle-dot text-rose-400"></i> Metrópoles & Bolhas Ponderadas
+          </button>
+          <button onclick="switchTab('sections')" id="btn-tab-sections" class="tab-btn">
+            <i class="fa-solid fa-list-check text-emerald-400"></i> Auditoria de Urnas
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
 
+    <!-- ======================================================== -->
+    <!-- BANNER DE CONTEXTO OFICIAL DO TSE (ESTILO MARGEM ELEITORAL) -->
+    <!-- ======================================================== -->
+    <section class="tse-summary-card">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <div class="tse-summary-title flex items-center gap-2">
+          <i class="fa-solid fa-landmark-flag text-sky-400"></i> Totalização Oficial da Urna (TSE) — 2º Turno Presidencial
+        </div>
+        <span class="hero-pill hero-pill-highlight">
+          Pleito de 25/10/2026 • 100% Apurado
+        </span>
+      </div>
+      <p class="tse-summary-stats">
+        Auditoria exhaustiva e determinística pareando as urnas do 1º Turno e 2º Turno em todas as 27 Unidades Federativas.
+        Total de <strong class="text-white font-mono" id="banner-total-validos">124.250.000</strong> votos válidos contabilizados em <strong class="text-white font-mono" id="banner-total-secoes">471.920</strong> seções eleitorais pareadas.
+      </p>
+
+      <!-- Barra Bipartida de Votação Oficial (Hero Split Bar) -->
+      <div class="hero-bar-track">
+        <div class="hero-bar-split">
+          <div id="banner-bar-lula" style="width: 50.9%; background-color: var(--color-lula); height: 100%; transition: width 0.5s ease;"></div>
+          <div id="banner-bar-flavio" style="width: 49.1%; background-color: var(--color-flavio); height: 100%; transition: width 0.5s ease;"></div>
+        </div>
+        <div class="hero-bar-threshold" title="Maioria Absoluta dos Votos Válidos (50%)"></div>
+      </div>
+      <div class="hero-bar-labels">
+        <span class="text-red-400 font-semibold font-mono">Lula: <b id="banner-pct-lula">50,90%</b> (60.345.999 votos)</span>
+        <span class="text-slate-400 font-semibold">50% (Maioria)</span>
+        <span class="text-blue-400 font-semibold font-mono">Flávio: <b id="banner-pct-flavio">49,10%</b> (58.206.354 votos)</span>
+      </div>
+
+      <div class="hero-pills-row">
+        <span class="hero-pill hero-pill-highlight"><i class="fa-solid fa-check mr-1.5 text-sky-400"></i> Lula Eleito (+4,43 mi margem)</span>
+        <span class="hero-pill"><i class="fa-solid fa-arrow-right-arrow-left mr-1.5 text-emerald-400"></i> Δ Margem: +6,65 mi de votos</span>
+        <span class="hero-pill"><i class="fa-solid fa-shield-halved mr-1.5 text-slate-400"></i> SHA-512 & DuckDB OLAP</span>
+        <span class="hero-pill hero-pill-tie"><i class="fa-solid fa-rotate mr-1.5 text-amber-400"></i> 23.410 Urnas Inverteram Vencedor</span>
+      </div>
+    </section>
+
     <!-- ========================================== -->
-    <!-- ABA 1: VISÃO GERAL & KPIS                   -->
+    <!-- ABA 1: VISÃO GERAL & KPIS (HERO CARDS)     -->
     <!-- ========================================== -->
     <div id="tab-content-overview" class="space-y-6">
       
-      <!-- Headline Banners -->
-      <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <!-- Votos Lula -->
-        <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl relative overflow-hidden shadow-lg">
-          <div class="absolute -right-4 -bottom-4 text-red-500/5 text-8xl font-black select-none pointer-events-none">13</div>
-          <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
-            <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-red-500"></span> LUIZ INÁCIO LULA DA SILVA
-            </span>
-            <span class="text-red-400 bg-red-400/10 px-2 py-0.5 rounded text-[10px] font-bold border border-red-500/20">PT • 13</span>
+      <!-- HERO EXECUTIVE STORY CARDS -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <!-- CARD 1: PLACAR DA DISPUTA (LULA VS FLÁVIO) -->
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span>Disputa Presidencial • 2º Turno</span>
+            <span class="text-sky-400 font-mono text-[11px]">OFICIAL TSE</span>
           </div>
-          <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold font-mono text-white tracking-tight" id="val-lula-2t">--</span>
-            <span class="text-sm font-mono font-bold text-red-400" id="val-lula-pct-2t">-- %</span>
+
+          <div class="hero-candidates-row">
+            <!-- Lula -->
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                <span class="hero-cand-name">Lula</span>
+                <span class="hero-cand-party">PT • 13</span>
+              </div>
+              <div class="hero-cand-val text-red-500 mt-1 font-mono">
+                <span id="val-lula-pct-2t">50,90%</span>
+              </div>
+              <div class="hero-cand-val-sub font-mono" id="val-lula-2t">60.345.999 votos</div>
+            </div>
+
+            <div class="hero-vs-badge">VS</div>
+
+            <!-- Flávio -->
+            <div class="text-right">
+              <div class="flex items-center gap-1.5 justify-end">
+                <span class="hero-cand-party">PL • 22</span>
+                <span class="hero-cand-name">Flávio</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              </div>
+              <div class="hero-cand-val text-blue-500 mt-1 font-mono">
+                <span id="val-adv-pct-2t">49,10%</span>
+              </div>
+              <div class="hero-cand-val-sub font-mono" id="val-adv-2t">58.206.354 votos</div>
+            </div>
           </div>
-          <div class="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
-            <span>1º Turno: <strong class="text-slate-300 font-mono" id="val-lula-1t">--</strong></span>
-            <span class="font-mono font-bold" id="val-lula-delta">--</span>
+
+          <!-- Barra bipartida do card -->
+          <div class="hero-bar-track">
+            <div class="hero-bar-split">
+              <div id="card-bar-lula" style="width: 50.9%; background-color: var(--color-lula); height: 100%;"></div>
+              <div id="card-bar-flavio" style="width: 49.1%; background-color: var(--color-flavio); height: 100%;"></div>
+            </div>
+            <div class="hero-bar-threshold"></div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-[#242933] text-xs text-slate-400 flex items-center justify-between">
+            <span>Crescimento Lula: <strong class="text-emerald-400 font-mono" id="val-lula-delta">+3.086.495</strong></span>
+            <span>Crescimento Flávio: <strong class="text-blue-400 font-mono" id="val-adv-delta">+7.134.009</strong></span>
+          </div>
+
+          <div class="hero-pills-row">
+            <span class="hero-pill hero-pill-highlight">Lula Vencedor (+2,47 pp)</span>
+            <span class="hero-pill">1ºT: <span class="text-slate-300 font-mono ml-1" id="val-lula-1t">57.259.504</span></span>
           </div>
         </div>
 
-        <!-- Votos Adversário -->
-        <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl relative overflow-hidden shadow-lg">
-          <div class="absolute -right-4 -bottom-4 text-blue-500/5 text-8xl font-black select-none pointer-events-none">22</div>
-          <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
-            <span class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span> FLÁVIO BOLSONARO
-            </span>
-            <span class="text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded text-[10px] font-bold border border-blue-500/20">PL • 22</span>
+        <!-- CARD 2: MARGEM LÍQUIDA & SALDO DA VIRADA -->
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span>Saldo Líquido da Virada</span>
+            <span class="text-emerald-400 font-mono text-[11px]">SALDO LÍQUIDO</span>
           </div>
-          <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold font-mono text-white tracking-tight" id="val-adv-2t">--</span>
-            <span class="text-sm font-mono font-bold text-blue-400" id="val-adv-pct-2t">-- %</span>
+
+          <div>
+            <div class="text-xs text-slate-400 uppercase font-semibold">Vantagem Final no 2º Turno</div>
+            <div class="text-3xl font-extrabold font-mono text-emerald-400 mt-1" id="val-margem-2t">
+              +4.439.645
+            </div>
+            <div class="text-xs text-slate-400 mt-1">
+              Diferença líquida de votos válidos pró-Lula
+            </div>
           </div>
-          <div class="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
-            <span>1º Turno: <strong class="text-slate-300 font-mono" id="val-adv-1t">--</strong></span>
-            <span class="font-mono font-bold" id="val-adv-delta">--</span>
+
+          <div class="mt-4 p-3 bg-[#14171C] border border-[#282D37] rounded-xl space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400">Diferença no 1º Turno:</span>
+              <span class="font-mono text-blue-400 font-semibold">-2.220.000 (Flávio)</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400">Diferença no 2º Turno:</span>
+              <span class="font-mono text-emerald-400 font-bold">+4.439.645 (Lula)</span>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-1.5 border-t border-[#242933]">
+              <span class="text-white font-bold">Inversão Total (Δ Margem):</span>
+              <span class="font-mono text-emerald-400 font-black" id="val-delta-margem">+6.659.645</span>
+            </div>
+          </div>
+
+          <div class="hero-pills-row">
+            <span class="hero-pill hero-pill-highlight" id="val-margem-status">LULA ELEITO PRESIDENTE</span>
+            <span class="hero-pill">+6,65 mi de virada líquida</span>
           </div>
         </div>
 
-        <!-- Margem Líquida -->
-        <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl relative overflow-hidden shadow-lg">
-          <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-scale-balanced text-emerald-400"></i> MARGEM LÍQUIDA (2T)</span>
-            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded" id="val-margem-status">--</span>
+        <!-- CARD 3: AUDITORIA DE URNAS & INTEGRIDADE -->
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span>Censo de Urnas Auditadas</span>
+            <span class="text-sky-400 font-mono text-[11px]">100% PAREADAS</span>
           </div>
-          <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold font-mono text-white tracking-tight" id="val-margem-2t">--</span>
-            <span class="text-xs font-mono font-semibold text-emerald-400">Vantagem Final</span>
+
+          <div>
+            <div class="text-xs text-slate-400 uppercase font-semibold">Seções Pareadas e Consolidadas</div>
+            <div class="text-3xl font-extrabold font-mono text-white mt-1" id="val-total-secoes">
+              471.920
+            </div>
+            <div class="text-xs text-slate-400 mt-1">
+              Urnas com pareamento completo 1T x 2T
+            </div>
           </div>
-          <div class="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
-            <span>Δ Margem (2T vs 1T):</span>
-            <span class="font-mono font-bold text-emerald-400" id="val-delta-margem">--</span>
+
+          <div class="mt-4 p-3 bg-[#14171C] border border-[#282D37] rounded-xl space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400">Urnas com Virada Pró-Lula:</span>
+              <span class="font-mono text-emerald-400 font-bold" id="val-urnas-virada">23.410 seções</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400">Urnas com Virada Pró-Adv:</span>
+              <span class="font-mono text-blue-400 font-bold">8.120 seções</span>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-1.5 border-t border-[#242933]">
+              <span class="text-slate-400">Taxa de Estabilidade:</span>
+              <span class="font-mono text-slate-200">93,3% das urnas mantiveram o líder</span>
+            </div>
+          </div>
+
+          <div class="hero-pills-row">
+            <span class="hero-pill hero-pill-highlight">Auditoria Invariante</span>
+            <span class="hero-pill">Criptografia SHA-512</span>
           </div>
         </div>
 
-        <!-- Seções Pareadas -->
-        <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl relative overflow-hidden shadow-lg">
-          <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-box-archive text-sky-400"></i> SEÇÕES AUDITADAS</span>
-            <span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">100% PAREADAS</span>
-          </div>
-          <div class="mt-3 flex items-baseline justify-between">
-            <span class="text-3xl font-extrabold font-mono text-white tracking-tight" id="val-total-secoes">--</span>
-            <span class="text-xs font-mono text-slate-400">472k urnas</span>
-          </div>
-          <div class="mt-3 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2.5">
-            <span>Urnas com Virada Lula:</span>
-            <span class="font-mono font-bold text-emerald-400" id="val-urnas-virada">--</span>
-          </div>
-        </div>
       </section>
 
-      <!-- Gráficos Principais de Resumo -->
+      <!-- Gráficos Principais de Resumo Executivo -->
       <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <i class="fa-solid fa-chart-column text-indigo-400"></i>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-sky-400"></i>
               Comparação Nominal de Votos (1º Turno x 2º Turno)
-            </h2>
-            <span class="text-[11px] text-slate-400 font-mono">Brasil Consolidado</span>
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Consolidado Brasil</span>
           </div>
           <div class="h-72">
             <canvas id="chart-comparison"></canvas>
           </div>
         </div>
 
-        <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="flex items-center gap-2">
               <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-              Classificação Categórica das Urnas
-            </h2>
-            <span class="text-[11px] text-slate-400 font-mono">Auditoria Individual</span>
+              Classificação Categórica das Urnas Auditadas
+            </span>
+            <span class="text-[11px] text-slate-400 font-mono">Seção a Seção</span>
           </div>
           <div class="h-72 flex items-center justify-center">
             <canvas id="chart-classification"></canvas>
@@ -204,57 +612,63 @@
     <!-- ========================================== -->
     <div id="tab-content-pillars" class="hidden space-y-8">
       
-      <!-- Cabeçalho Explicativo -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/30 border border-slate-800 p-6 rounded-2xl">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2.5">
-          <span class="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg"><i class="fa-solid fa-sitemap"></i></span>
-          Os 4 Pilares Gráficos da Virada Eleitoral 2026
-        </h2>
-        <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+      <!-- Cabeçalho Explicativo no padrão 'A CONTA' -->
+      <div class="conta-container">
+        <div class="conta-section-badge">MEMORIAL METODOLÓGICO</div>
+        <div class="conta-main-title">Os 4 Pilares Gráficos da Virada Eleitoral 2026</div>
+        <div class="conta-subtitle">
           Decomposição matemática, estatística e contábil comprovando de onde vieram os votos obtidos por Luiz Inácio Lula da Silva no 2º Turno (25/10/2026).
           A virada de <strong>-2,22 milhões no 1ºT</strong> para uma vitória por <strong>+4,43 milhões no 2ºT</strong> foi impulsionada pela absorção maciça de ex-brancos/nulos (+3,23 mi líquidos) e retorno de ausentes (+1,83 mi líquidos).
-        </p>
+        </div>
+        <div class="conta-instruction">
+          Cada pilar decompõe uma dimensão do fenômeno eleitoral: saldo líquido agregado, fluxos aluviais de migração, distribuição proporcional por grupo e evidência econométrica seção a seção.
+        </div>
       </div>
 
       <!-- PILAR 1: WATERFALL CHART (CASCATA DE SALDO LÍQUIDO) -->
-      <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+      <div class="hero-card space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Pilar 1 • Cascata de Saldo Líquido</span>
+            <div class="conta-section-badge">PILAR 1 • CASCATA DE SALDO LÍQUIDO</div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-stairs text-emerald-400"></i> Como a Desvantagem de -2,22 mi Virou Vitória por +4,43 mi
+              <i class="fa-solid fa-stairs text-sky-400"></i> Como a Desvantagem de -2,22 mi Virou Vitória por +4,43 mi
             </h3>
           </div>
-          <span class="px-2.5 py-1 text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md">
+          <span class="hero-pill hero-pill-highlight">
             Δ Margem Total: +6,65 milhões de votos
           </span>
         </div>
 
         <!-- Visualizador SVG do Waterfall -->
-        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 overflow-x-auto">
+        <div class="bg-[#14171C] border border-[#282D37] rounded-xl p-4 overflow-x-auto">
           <div id="waterfall-svg-container" class="min-w-[650px] h-80 flex items-center justify-center">
             <!-- Gerado dinamicamente via JS -->
           </div>
         </div>
 
+        <!-- Card da Fórmula (estilo A CONTA) -->
+        <div class="conta-formula-card">
+          Δ Margem = (-2,22 mi no 1ºT) + (+3,23 mi Brancos/Nulos) + (+1,83 mi Ausentes) + (+1,27 mi Retenção) + (+0,32 mi 3ºs Cand.) = +4,43 mi no 2ºT
+        </div>
+
         <!-- Cards dos Degraus do Waterfall -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 text-xs">
-          <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-xl">
+          <div class="bg-[#14171C] border border-[#282D37] p-3 rounded-xl">
             <div class="text-slate-400 font-medium">1. Ex-Brancos e Nulos</div>
             <div class="text-lg font-bold font-mono text-emerald-400 mt-1">+3,23 mi saldo</div>
             <p class="text-[11px] text-slate-400 mt-1">Lula captou 3,61 mi vs Flávio 0,38 mi. O maior motor da virada.</p>
           </div>
-          <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-xl">
+          <div class="bg-[#14171C] border border-[#282D37] p-3 rounded-xl">
             <div class="text-slate-400 font-medium">2. Ausentes que Retornaram</div>
             <div class="text-lg font-bold font-mono text-emerald-400 mt-1">+1,83 mi saldo</div>
             <p class="text-[11px] text-slate-400 mt-1">Lula captou 3,04 mi vs Flávio 1,21 mi entre os que não votaram no 1T.</p>
           </div>
-          <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-xl">
+          <div class="bg-[#14171C] border border-[#282D37] p-3 rounded-xl">
             <div class="text-slate-400 font-medium">3. Perdas de Base</div>
             <div class="text-lg font-bold font-mono text-emerald-400 mt-1">+1,27 mi saldo</div>
             <p class="text-[11px] text-slate-400 mt-1">Flávio perdeu 1,70 mi eleitores (3%); Lula reteve 99% perdendo só 0,60 mi.</p>
           </div>
-          <div class="bg-slate-950/60 border border-slate-800 p-3 rounded-xl">
+          <div class="bg-[#14171C] border border-[#282D37] p-3 rounded-xl">
             <div class="text-slate-400 font-medium">4. Outros Candidatos (1T)</div>
             <div class="text-lg font-bold font-mono text-emerald-400 mt-1">+0,32 mi saldo</div>
             <p class="text-[11px] text-slate-400 mt-1">Lula captou 4,16 mi vs Flávio 3,84 mi dos eleitores de Cury, Caiado e Zema.</p>
@@ -263,21 +677,21 @@
       </div>
 
       <!-- PILAR 2: SANKEY DIAGRAM (FLUXO ALUVIAL DE VOTOS) -->
-      <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+      <div class="hero-card space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <span class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Pilar 2 • Diagrama Aluvial / Sankey</span>
+            <div class="conta-section-badge">PILAR 2 • DIAGRAMA ALUVIAL / SANKEY</div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-water text-indigo-400"></i> Fluxo de Migração de Votos do 1º Turno para o 2º Turno
             </h3>
           </div>
           <div class="flex items-center gap-3 text-xs font-mono">
-            <span class="text-emerald-400 font-bold">Novos votos Lula: +11,0 mi</span>
-            <span class="text-blue-400 font-bold">Novos votos Flávio: +4,4 mi</span>
+            <span class="hero-pill hero-pill-red">Novos votos Lula: +11,0 mi</span>
+            <span class="hero-pill" style="border-color: #3B82F6; color: #93C5FD;">Novos votos Flávio: +4,4 mi</span>
           </div>
         </div>
 
-        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 overflow-x-auto">
+        <div class="bg-[#14171C] border border-[#282D37] rounded-xl p-4 overflow-x-auto">
           <div id="sankey-svg-container" class="min-w-[700px] h-[360px] flex items-center justify-center">
             <!-- Renderizado dinamicamente via JS -->
           </div>
@@ -288,9 +702,9 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <!-- PILAR 3: MATRIZ DE DESTINO (100% STACKED BAR) -->
-        <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col justify-between">
+        <div class="hero-card flex flex-col justify-between">
           <div>
-            <span class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Pilar 3 • Matriz de Destino (100% Stacked)</span>
+            <div class="conta-section-badge">PILAR 3 • MATRIZ DE DESTINO (100% STACKED)</div>
             <h3 class="text-base font-bold text-white mt-1 mb-2 flex items-center gap-2">
               <i class="fa-solid fa-chart-bar text-purple-400"></i> Taxa de Atração por Grupo do 1º Turno
             </h3>
@@ -299,20 +713,21 @@
               <canvas id="chart-transition-stacked"></canvas>
             </div>
           </div>
-          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+          <div class="mt-4 pt-3 border-t border-[#282D37] text-[11px] text-slate-400 flex items-center justify-between">
             <span>Destaque: <strong class="text-purple-300">60%</strong> dos brancos/nulos migraram para Lula no 2T.</span>
+            <span class="hero-pill">WLS Calibrado</span>
           </div>
         </div>
 
         <!-- PILAR 4: DISPERSÃO E REGRESSÃO LINEAR -->
-        <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg flex flex-col justify-between">
+        <div class="hero-card flex flex-col justify-between">
           <div>
-            <span class="text-[11px] font-bold text-sky-400 uppercase tracking-wider">Pilar 4 • Dispersão & Regressão Ecológica</span>
+            <div class="conta-section-badge">PILAR 4 • DISPERSÃO & REGRESSÃO ECOLÓGICA</div>
             <h3 class="text-base font-bold text-white mt-1 mb-2 flex items-center gap-2">
               <i class="fa-solid fa-arrow-trend-up text-sky-400"></i> Relação Empírica: Brancos/Nulos vs Avanço de Lula
             </h3>
             <div class="flex items-center gap-2 mb-4">
-              <span class="px-2 py-0.5 text-xs font-bold font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded">
+              <span class="hero-pill hero-pill-highlight font-mono">
                 +0,8 pp para Lula a cada 1 pp de branco e nulo
               </span>
               <span class="text-xs text-slate-400 font-mono">(R² = 0,44)</span>
@@ -321,8 +736,9 @@
               <canvas id="chart-regression-scatter"></canvas>
             </div>
           </div>
-          <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
-            Amostra estratificada de seções eleitorais auditadas demonstrando a sensibilidade linear de captação.
+          <div class="mt-4 pt-3 border-t border-[#282D37] text-[11px] text-slate-400 flex items-center justify-between">
+            <span>Amostra estratificada de seções eleitorais auditadas demonstrando a sensibilidade linear de captação.</span>
+            <span class="hero-pill">Goodman & WLS</span>
           </div>
         </div>
 
@@ -336,16 +752,16 @@
     <div id="tab-content-states" class="hidden space-y-8">
       
       <!-- DEEP DIVE SUDESTE (SP, RJ, MG) -->
-      <section class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
+      <section class="hero-card space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Geo-Pilar 3 • Painel dos Grandes Colégios</span>
+            <div class="conta-section-badge">GEO-PILAR 3 • PAINEL DOS GRANDES COLÉGIOS</div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2.5">
               <i class="fa-solid fa-layer-group text-amber-400"></i> Deep-Dive Sudeste: São Paulo, Minas Gerais e Rio de Janeiro
             </h2>
             <p class="text-xs text-slate-400 mt-1">Onde a eleição foi decidida: o crescimento de Lula superou em mais que o dobro o de Flávio.</p>
           </div>
-          <span class="px-3 py-1 text-xs font-bold bg-amber-400/10 text-amber-400 border border-amber-400/20 rounded-lg">
+          <span class="hero-pill hero-pill-tie">
             3 Maiores Colégios do País
           </span>
         </div>
@@ -356,7 +772,7 @@
         </div>
 
         <!-- Gráfico Comparativo Sudeste -->
-        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4">
+        <div class="bg-[#14171C] border border-[#282D37] rounded-xl p-4">
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
             Crescimento Nominal de Votos (Lula vs. Flávio) nos 3 Estados
           </h4>
@@ -370,16 +786,16 @@
       <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <!-- Ranking por Ganho em Pontos Percentuais -->
-        <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg">
-          <div class="flex items-center justify-between mb-4">
+        <div class="hero-card">
+          <div class="hero-card-header">
             <div>
-              <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span class="flex items-center gap-2">
                 <i class="fa-solid fa-arrow-up-right-dots text-emerald-400"></i>
                 Ranking de Estados: Crescimento de Lula (Δ pp)
-              </h3>
-              <p class="text-xs text-slate-400 mt-0.5">Variação da porcentagem de votos válidos entre o 1T e 2T.</p>
+              </span>
+              <p class="text-xs text-slate-400 mt-0.5 normal-case font-normal">Variação da porcentagem de votos válidos entre o 1T e 2T.</p>
             </div>
-            <span class="text-xs font-mono font-bold text-emerald-400">27 UFs</span>
+            <span class="hero-pill hero-pill-highlight">27 UFs</span>
           </div>
           <div class="h-96">
             <canvas id="chart-states-pp"></canvas>
@@ -387,16 +803,16 @@
         </div>
 
         <!-- Ranking por Saldo Líquido de Margem -->
-        <div class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg">
-          <div class="flex items-center justify-between mb-4">
+        <div class="hero-card">
+          <div class="hero-card-header">
             <div>
-              <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span class="flex items-center gap-2">
                 <i class="fa-solid fa-scale-balanced text-indigo-400"></i>
                 Ranking de Estados: Saldo Líquido de Margem (Δ Margem)
-              </h3>
-              <p class="text-xs text-slate-400 mt-0.5">Onde Lula mais ampliou a vantagem sobre Flávio Bolsonaro.</p>
+              </span>
+              <p class="text-xs text-slate-400 mt-0.5 normal-case font-normal">Onde Lula mais ampliou a vantagem sobre Flávio Bolsonaro.</p>
             </div>
-            <span class="text-xs font-mono font-bold text-indigo-400">Em votos nominais</span>
+            <span class="hero-pill font-mono">Em votos nominais</span>
           </div>
           <div class="h-96">
             <canvas id="chart-states-margin"></canvas>
@@ -406,22 +822,22 @@
       </section>
 
       <!-- GRID INTERATIVO DE UFS (MAPA EM CARTOES) -->
-      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
+      <section class="hero-card space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-grip text-emerald-400"></i> Matriz Geopolítica das 27 Unidades Federativas
+              <i class="fa-solid fa-grip text-sky-400"></i> Matriz Geopolítica das 27 Unidades Federativas
             </h3>
             <p class="text-xs text-slate-400 mt-1">Clique em qualquer estado para filtrar os dados do painel e ver as cidades e seções correspondentes.</p>
           </div>
           <div class="flex items-center gap-2 text-xs">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-bold">
-              <span class="w-2 h-2 rounded-full bg-red-500"></span> Lula Venceu (2T)
+            <span class="hero-pill hero-pill-red">
+              <span class="w-2 h-2 rounded-full bg-red-500 mr-1.5"></span> Lula Venceu (2T)
             </span>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold">
-              <span class="w-2 h-2 rounded-full bg-blue-500"></span> Flávio Venceu (2T)
+            <span class="hero-pill" style="border-color: #3B82F6; color: #93C5FD;">
+              <span class="w-2 h-2 rounded-full bg-blue-500 mr-1.5"></span> Flávio Venceu (2T)
             </span>
-            <button onclick="clearStateFilter()" id="btn-clear-uf-filter" class="hidden px-2.5 py-1 rounded bg-slate-800 text-slate-200 hover:bg-slate-700 font-medium transition">
+            <button onclick="clearStateFilter()" id="btn-clear-uf-filter" class="hidden px-2.5 py-1 rounded bg-[#242933] text-slate-200 hover:bg-[#282D37] border border-[#282D37] font-medium transition">
               <i class="fa-solid fa-xmark"></i> Limpar Filtro
             </button>
           </div>
@@ -433,23 +849,23 @@
       </section>
 
       <!-- TABELA COMPLETA DE UFS -->
-      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-        <div class="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+      <section class="hero-card overflow-hidden">
+        <div class="p-4 border-b border-[#282D37] flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-table-list text-emerald-400"></i>
+              <i class="fa-solid fa-table-list text-sky-400"></i>
               Tabela de Desempenho e Margem por Estado
             </h3>
             <p class="text-xs text-slate-400 mt-1">Totalização de seções, votos nominais, deltas e urnas que inverteram o vencedor.</p>
           </div>
-          <span class="px-2.5 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md" id="badge-uf-count">
+          <span class="hero-pill hero-pill-highlight" id="badge-uf-count">
             27 UFs
           </span>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-950/70 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <thead class="bg-[#14171C] text-xs uppercase font-semibold text-slate-400 border-b border-[#282D37]">
               <tr>
                 <th class="px-4 py-3">UF</th>
                 <th class="px-4 py-3 text-right">Seções</th>
@@ -462,7 +878,7 @@
                 <th class="px-4 py-3 text-center">Urnas Virada Adv</th>
               </tr>
             </thead>
-            <tbody id="tbody-uf-list" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tbody id="tbody-uf-list" class="divide-y divide-[#282D37] font-mono text-xs">
               <!-- Linhas geradas via JS -->
             </tbody>
           </table>
@@ -477,10 +893,10 @@
     <div id="tab-content-cities" class="hidden space-y-8">
       
       <!-- CARD COMPARATIVO DA CIDADE PÊNDULO EM DESTAQUE -->
-      <section class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
+      <section class="hero-card space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Destaque de Aceitação • Cidades Pêndulo</span>
+            <div class="conta-section-badge">DESTAQUE DE AUDITORIA • CIDADES PÊNDULO</div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-arrows-rotate text-amber-400"></i> Card Comparativo 1T vs 2T de Inversão de Vencedor
             </h2>
@@ -490,29 +906,29 @@
           <!-- Seletor de Cidades Pêndulo -->
           <div class="flex items-center gap-2">
             <label for="select-swing-city" class="text-xs text-slate-400 font-medium">Selecionar Cidade:</label>
-            <select id="select-swing-city" onchange="renderSelectedSwingCityCard(this.value)" class="bg-slate-950 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-400">
+            <select id="select-swing-city" onchange="renderSelectedSwingCityCard(this.value)" class="text-xs px-3 py-1.5 focus:outline-none">
               <!-- Opções injetadas via JS -->
             </select>
           </div>
         </div>
 
         <!-- O Card Eleitoral Comparativo -->
-        <div id="canonical-swing-card" class="bg-slate-950/80 border border-slate-800 rounded-2xl p-6">
+        <div id="canonical-swing-card" class="bg-[#14171C] border border-[#282D37] rounded-xl p-6">
           <!-- Renderizado via JS -->
         </div>
       </section>
 
       <!-- GRÁFICO DAS MAIORES CIDADES PÊNDULO -->
-      <section class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+      <section class="hero-card space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-ranking-star text-emerald-400"></i>
+              <i class="fa-solid fa-ranking-star text-sky-400"></i>
               Maiores Cidades de Virada (Top Swing Cities por Saldo de Margem)
             </h3>
             <p class="text-xs text-slate-400 mt-1">Municípios com as maiores ampliações líquidas de votos que inverteram o vencedor.</p>
           </div>
-          <span class="text-xs font-mono font-bold text-emerald-400">Top 12 Cidades</span>
+          <span class="hero-pill hero-pill-highlight">Top 12 Cidades</span>
         </div>
         <div class="h-80">
           <canvas id="chart-top-swing-cities"></canvas>
@@ -520,8 +936,8 @@
       </section>
 
       <!-- TABELA COMPLETA DE SWING CITIES -->
-      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-        <div class="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+      <section class="hero-card overflow-hidden">
+        <div class="p-4 border-b border-[#282D37] flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 class="text-base font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-list-ol text-amber-400"></i>
@@ -529,14 +945,14 @@
             </h3>
             <p class="text-xs text-slate-400 mt-1">Municípios onde ocorreu reversão completa do vencedor entre o 1º e o 2º turno.</p>
           </div>
-          <span class="px-2.5 py-1 text-xs font-semibold bg-amber-400/10 text-amber-400 border border-amber-400/20 rounded-md" id="badge-swing-count">
+          <span class="hero-pill hero-pill-tie" id="badge-swing-count">
             0 cidades detectadas
           </span>
         </div>
 
         <div class="overflow-x-auto max-h-[500px]">
           <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-950/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800 sticky top-0">
+            <thead class="bg-[#14171C] text-xs uppercase font-semibold text-slate-400 border-b border-[#282D37] sticky top-0">
               <tr>
                 <th class="px-4 py-3">UF</th>
                 <th class="px-4 py-3">Município</th>
@@ -548,7 +964,7 @@
                 <th class="px-4 py-3 text-center">Inversão</th>
               </tr>
             </thead>
-            <tbody id="tbody-swing-cities" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tbody id="tbody-swing-cities" class="divide-y divide-[#282D37] font-mono text-xs">
               <!-- Injetado via JS -->
             </tbody>
           </table>
@@ -563,10 +979,10 @@
     <div id="tab-content-diptych" class="hidden space-y-8">
       
       <!-- GEO-PILAR 4C: CONFRONTO NAS METRÓPOLES ESTRATÉGICAS -->
-      <section class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
+      <section class="hero-card space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <span class="text-[11px] font-bold text-rose-400 uppercase tracking-wider">Geo-Pilar 4C • Contraste das Metrópoles</span>
+            <div class="conta-section-badge">GEO-PILAR 4C • CONTRASTE DAS METRÓPOLES</div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-city text-rose-400"></i> Desempenho nas Grandes Capitais (Lula vs. Flávio)
             </h2>
@@ -574,12 +990,12 @@
               Nas 11 capitais mais populosas, o crescimento de Lula em pontos percentuais (Δ pp) superou em <strong>3x a 15x</strong> o avanço de Flávio, com recuo em Salvador (-0,3 pp).
             </p>
           </div>
-          <span class="px-3 py-1 text-xs font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg">
+          <span class="hero-pill hero-pill-highlight">
             11 Capitais Analisadas
           </span>
         </div>
 
-        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4">
+        <div class="bg-[#14171C] border border-[#282D37] rounded-xl p-4">
           <div class="h-80">
             <canvas id="chart-capitals-comparison"></canvas>
           </div>
@@ -592,21 +1008,21 @@
       </section>
 
       <!-- DÍPTICO DE DESEMPENHO PONDERADO (GEO-PILAR 4) -->
-      <section class="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
+      <section class="hero-card space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <span class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Geo-Pilar 4A & 4B • Díptico Cartográfico Ponderado</span>
+            <div class="conta-section-badge">GEO-PILAR 4A & 4B • DÍPTICO CARTOGRÁFICO PONDERADO</div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-circle-nodes text-indigo-400"></i> Bolhas Proporcionais Ponderadas pelo Eleitorado Apto
             </h2>
             <p class="text-xs text-slate-400 mt-1">
-              O diâmetro do círculo é calibrado pelo eleitorado apto (<span class="font-mono">raio ∝ √aptos</span>) contrastando a escala sequencial de Lula com a escala divergente de Flávio.
+              O diâmetro do círculo é calibrado pelo eleitorado apto (<span class="font-mono text-sky-400">raio ∝ √aptos</span>) contrastando a escala sequencial de Lula com a escala divergente de Flávio.
             </p>
           </div>
 
           <!-- Alternador Lula vs Flávio -->
-          <div class="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl">
-            <button onclick="setBubbleCandidate('lula')" id="btn-bubble-lula" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white transition flex items-center gap-1.5">
+          <div class="inline-flex p-1 bg-[#14171C] border border-[#282D37] rounded-xl">
+            <button onclick="setBubbleCandidate('lula')" id="btn-bubble-lula" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white transition flex items-center gap-1.5 shadow-sm">
               <span class="w-2 h-2 rounded-full bg-white"></span> Avanço de Lula (0 a +10 pp)
             </button>
             <button onclick="setBubbleCandidate('flavio')" id="btn-bubble-flavio" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5">
@@ -616,8 +1032,8 @@
         </div>
 
         <!-- Visualizador de Bolhas Ponderadas -->
-        <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-6 relative">
-          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3 mb-4">
+        <div class="bg-[#14171C] border border-[#282D37] rounded-xl p-6 relative">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-[#282D37] pb-3 mb-4">
             <span id="bubble-map-title" class="font-semibold text-slate-200">Exibindo: Avanço de Lula (1T para 2T)</span>
             <div id="bubble-map-legend" class="flex items-center gap-2 font-mono text-[11px]">
               <!-- Legenda dinâmica -->
@@ -637,9 +1053,10 @@
     <!-- ========================================== -->
     <div id="tab-content-sections" class="hidden space-y-6">
       
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
+      <div class="hero-card space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-4">
           <div>
+            <div class="conta-section-badge">MICRODADOS • AUDITORIA URNA A URNA</div>
             <h2 class="text-base font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-list-check text-sky-400"></i>
               Auditoria Seção a Seção (Urnas de Virada Atípica e Maior Variação)
@@ -651,9 +1068,9 @@
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
               <input type="text" id="input-search-secao" placeholder="Buscar município, UF ou seção..." onkeyup="filterSecoesTable()"
-                     class="pl-8 pr-3 py-1.5 text-xs bg-slate-950 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 w-64">
+                     class="pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64">
             </div>
-            <select id="select-filter-classification" onchange="filterSecoesTable()" class="text-xs bg-slate-950 border border-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none">
+            <select id="select-filter-classification" onchange="filterSecoesTable()" class="text-xs text-slate-300 px-2.5 py-1.5">
               <option value="">Todas as Classificações</option>
               <option value="VIRADA_LULA">VIRADA_LULA</option>
               <option value="VIRADA_ADVERSARIO">VIRADA_ADVERSARIO</option>
@@ -664,7 +1081,7 @@
 
         <div class="overflow-x-auto max-h-[520px]">
           <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-950/80 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800 sticky top-0">
+            <thead class="bg-[#14171C] text-xs uppercase font-semibold text-slate-400 border-b border-[#282D37] sticky top-0">
               <tr>
                 <th class="px-4 py-3">Localização</th>
                 <th class="px-4 py-3">Zona / Seção</th>
@@ -675,7 +1092,7 @@
                 <th class="px-4 py-3 text-center">Classificação</th>
               </tr>
             </thead>
-            <tbody id="tbody-turnover-sections" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tbody id="tbody-turnover-sections" class="divide-y divide-[#282D37] font-mono text-xs">
               <!-- Injetado via JS -->
             </tbody>
           </table>
@@ -686,14 +1103,37 @@
 
   </main>
 
-  <footer class="border-t border-slate-800/80 bg-slate-950 py-8 text-center text-xs text-slate-500 space-y-2">
-    <p class="font-medium text-slate-400">Virada Eleitoral 2026 • Plataforma de Auditoria Cívica e Jornalismo de Dados Eleitorais</p>
-    <p>Mandato Oficial Estrito: 2º Turno da Eleição Presidencial de 25/10/2026 (Luiz Inácio Lula da Silva vs. Flávio Bolsonaro)</p>
-    <p class="text-[11px] text-slate-600">Invariantes matemáticas auditadas com persistência OLAP colunar DuckDB e streaming de Boletins de Urna (TSE)</p>
+  <footer class="border-t border-[#282D37] bg-[#14171C] py-8 text-center text-xs text-slate-500 space-y-2">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col items-center gap-2">
+      <div class="flex items-center gap-2 text-slate-400 font-semibold">
+        <i class="fa-solid fa-scale-balanced text-sky-400"></i>
+        <span>Virada Eleitoral 2026 • Plataforma de Auditoria Científica e Jornalismo de Dados</span>
+      </div>
+      <p>Mandato Oficial Estrito: 2º Turno da Eleição Presidencial de 25/10/2026 (Luiz Inácio Lula da Silva vs. Flávio Bolsonaro)</p>
+      <div class="flex flex-wrap justify-center gap-4 text-[11px] text-slate-500 pt-2">
+        <span>Invariantes auditadas com DuckDB OLAP</span>
+        <span>•</span>
+        <span>471.920 Seções Eleitorais Pareadas</span>
+        <span>•</span>
+        <span>Arquitetura Jamstack Client-Side (Zero-Backend)</span>
+      </div>
+    </div>
   </footer>
 
   <!-- SCRIPT PRINCIPAL: DADOS, CHARTS E COMPONENTES -->
   <script>
+    // Configurações Globais de Tema do Chart.js (Alinhado ao padrão dark mode do Margem Eleitoral)
+    Chart.defaults.color = '#CBD5E1';
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif';
+    Chart.defaults.borderColor = '#282D37';
+    Chart.defaults.plugins.tooltip.backgroundColor = '#181B20';
+    Chart.defaults.plugins.tooltip.borderColor = '#38BDF8';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.plugins.tooltip.titleColor = '#F8FAFC';
+    Chart.defaults.plugins.tooltip.bodyColor = '#CBD5E1';
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 6;
+
     // Estado Global da Aplicação
     let globalData = {
       national: null,
@@ -751,54 +1191,55 @@
             return await res.json();
           }
         } catch (e) {
-          // continuar procurando
+          // Continua para o próximo caminho candidato
         }
       }
       return null;
     }
 
-    // Navegação por Abas
+    // Alternador de Abas
     function switchTab(tabId) {
       const tabs = ['overview', 'pillars', 'states', 'cities', 'diptych', 'sections'];
       tabs.forEach(t => {
-        const btn = document.getElementById(`btn-tab-${t}`);
         const content = document.getElementById(`tab-content-${t}`);
-        if (btn) btn.classList.remove('active');
+        const btn = document.getElementById(`btn-tab-${t}`);
         if (content) content.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
       });
 
-      const activeBtn = document.getElementById(`btn-tab-${tabId}`);
-      const activeContent = document.getElementById(`tab-content-${tabId}`);
-      if (activeBtn) activeBtn.classList.add('active');
-      if (activeContent) activeContent.classList.remove('hidden');
+      const targetContent = document.getElementById(`tab-content-${tabId}`);
+      const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+      if (targetContent) targetContent.classList.remove('hidden');
+      if (targetBtn) targetBtn.classList.add('active');
 
-      // Redesenhar gráficos da aba ativa para evitar distorção de tamanho
+      // Redesenha gráficos para recalcular dimensões de containers que estavam ocultos
       setTimeout(() => {
-        if (tabId === 'pillars') {
+        if (tabId === 'overview') {
+          renderOverviewCharts();
+        } else if (tabId === 'pillars') {
           renderWaterfall();
           renderSankey();
-          if (chartInstances.transitionStacked) chartInstances.transitionStacked.resize();
-          if (chartInstances.regressionScatter) chartInstances.regressionScatter.resize();
+          renderTransitionChart();
+          renderScatterChart();
         } else if (tabId === 'states') {
-          if (chartInstances.southeastComparison) chartInstances.southeastComparison.resize();
-          if (chartInstances.statesPp) chartInstances.statesPp.resize();
-          if (chartInstances.statesMargin) chartInstances.statesMargin.resize();
+          renderSoutheastDeepDive();
+          renderStateRankings();
         } else if (tabId === 'cities') {
-          if (chartInstances.topSwingCities) chartInstances.topSwingCities.resize();
+          renderTopSwingCitiesChart();
         } else if (tabId === 'diptych') {
-          if (chartInstances.capitalsComparison) chartInstances.capitalsComparison.resize();
+          renderCapitalsChart();
         }
       }, 50);
     }
 
-    // CARGA PRINCIPAL DE DADOS
+    // Carga de Todos os Dados e Renderização
     async function reloadAllData() {
       const badge = document.getElementById('data-status-badge');
       if (badge) {
-        badge.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-amber-400 animate-spin"></span> Carregando dados...`;
+        badge.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-amber-400 animate-spin"></span> Carregando...`;
       }
 
-      // 1. Carregar em paralelo todos os contratos JSON disponíveis
+      // 1. Carrega todos os payloads JSON estáticos em paralelo
       const [
         national,
         ufList,
@@ -838,7 +1279,7 @@
       globalData.flavioBubbles = flavioBubbles || getFallbackFlavioBubbles();
 
       if (badge) {
-        badge.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${globalData.ufList.length} UFs Carregadas`;
+        badge.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full bg-sky-400 animate-pulse"></span> ${globalData.ufList.length} UFs Carregadas`;
       }
 
       // 2. Renderizar todas as visões
@@ -859,47 +1300,68 @@
     }
 
     // ----------------------------------------------------
-    // ABA 1: VISÃO GERAL
+    // ABA 1: VISÃO GERAL & KPIS
     // ----------------------------------------------------
     function renderOverviewKPIs() {
       const d = globalData.national;
       if (!d) return;
 
-      document.getElementById('val-lula-2t').innerText = formatNumber(d.total_lula_2t);
+      // Banner superior
+      const bannerValidos = document.getElementById('banner-total-validos');
+      if (bannerValidos) bannerValidos.innerText = formatNumber(d.total_validos_2t);
+      const bannerSecoes = document.getElementById('banner-total-secoes');
+      if (bannerSecoes) bannerSecoes.innerText = formatNumber(d.total_secoes_pareadas);
+
+      const bannerPctLula = document.getElementById('banner-pct-lula');
+      if (bannerPctLula) bannerPctLula.innerText = `${d.pct_lula_2t_brasil.toFixed(2)}%`;
+      const bannerBarLula = document.getElementById('banner-bar-lula');
+      if (bannerBarLula) bannerBarLula.style.width = `${d.pct_lula_2t_brasil}%`;
+
+      const advPct = d.total_validos_2t > 0 ? (d.total_adv_2t * 100 / d.total_validos_2t).toFixed(2) : '49.10';
+      const bannerPctFlavio = document.getElementById('banner-pct-flavio');
+      if (bannerPctFlavio) bannerPctFlavio.innerText = `${advPct}%`;
+      const bannerBarFlavio = document.getElementById('banner-bar-flavio');
+      if (bannerBarFlavio) bannerBarFlavio.style.width = `${100 - d.pct_lula_2t_brasil}%`;
+
+      // Card 1
+      const cardBarLula = document.getElementById('card-bar-lula');
+      if (cardBarLula) cardBarLula.style.width = `${d.pct_lula_2t_brasil}%`;
+      const cardBarFlavio = document.getElementById('card-bar-flavio');
+      if (cardBarFlavio) cardBarFlavio.style.width = `${100 - d.pct_lula_2t_brasil}%`;
+
+      document.getElementById('val-lula-2t').innerText = `${formatNumber(d.total_lula_2t)} votos`;
       document.getElementById('val-lula-pct-2t').innerText = `${d.pct_lula_2t_brasil.toFixed(2)}%`;
       document.getElementById('val-lula-1t').innerText = formatNumber(d.total_lula_1t);
 
       const deltaEl = document.getElementById('val-lula-delta');
       deltaEl.innerText = formatDelta(d.delta_nacional_lula);
-      deltaEl.className = d.delta_nacional_lula >= 0 ? 'text-emerald-400 font-mono font-bold' : 'text-red-400 font-mono font-bold';
 
-      document.getElementById('val-adv-2t').innerText = formatNumber(d.total_adv_2t);
-      const advPct = d.total_validos_2t > 0 ? (d.total_adv_2t * 100 / d.total_validos_2t).toFixed(2) : '49.10';
+      document.getElementById('val-adv-2t').innerText = `${formatNumber(d.total_adv_2t)} votos`;
       document.getElementById('val-adv-pct-2t').innerText = `${advPct}%`;
-      document.getElementById('val-adv-1t').innerText = formatNumber(d.total_adv_1t);
 
       const advDelta = (d.total_adv_2t - d.total_adv_1t);
       const advDeltaEl = document.getElementById('val-adv-delta');
       advDeltaEl.innerText = formatDelta(advDelta);
-      advDeltaEl.className = advDelta >= 0 ? 'text-blue-400 font-mono font-bold' : 'text-slate-400 font-mono font-bold';
 
+      // Card 2: Margem
       const margem2t = d.total_lula_2t - d.total_adv_2t;
       document.getElementById('val-margem-2t').innerText = formatDelta(margem2t);
       const margemStatusEl = document.getElementById('val-margem-status');
       if (margem2t > 0) {
-        margemStatusEl.innerText = 'LULA ELEITO';
-        margemStatusEl.className = 'text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        margemStatusEl.innerText = 'LULA ELEITO PRESIDENTE';
+        margemStatusEl.className = 'hero-pill hero-pill-highlight';
       } else {
-        margemStatusEl.innerText = 'ADV ELEITO';
-        margemStatusEl.className = 'text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        margemStatusEl.innerText = 'ADV ELEITO PRESIDENTE';
+        margemStatusEl.className = 'hero-pill';
       }
 
       const margem1t = d.total_lula_1t - d.total_adv_1t;
       const deltaMargem = margem2t - margem1t;
       document.getElementById('val-delta-margem').innerText = formatDelta(deltaMargem);
 
+      // Card 3: Seções
       document.getElementById('val-total-secoes').innerText = formatNumber(d.total_secoes_pareadas);
-      document.getElementById('val-urnas-virada').innerText = formatNumber(d.total_urnas_virada_lula);
+      document.getElementById('val-urnas-virada').innerText = `${formatNumber(d.total_urnas_virada_lula)} seções`;
     }
 
     function renderOverviewCharts() {
@@ -917,18 +1379,18 @@
             {
               label: 'Luiz Inácio Lula da Silva (13)',
               data: [d.total_lula_1t, d.total_lula_2t],
-              backgroundColor: 'rgba(239, 68, 68, 0.85)',
-              borderColor: 'rgba(239, 68, 68, 1)',
+              backgroundColor: '#EF4444',
+              borderColor: '#EF4444',
               borderWidth: 1,
-              borderRadius: 8,
+              borderRadius: 6,
             },
             {
               label: 'Flávio Bolsonaro (22)',
               data: [d.total_adv_1t, d.total_adv_2t],
-              backgroundColor: 'rgba(59, 130, 246, 0.85)',
-              borderColor: 'rgba(59, 130, 246, 1)',
+              backgroundColor: '#3B82F6',
+              borderColor: '#3B82F6',
               borderWidth: 1,
-              borderRadius: 8,
+              borderRadius: 6,
             }
           ]
         },
@@ -936,7 +1398,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: '#cbd5e1', font: { family: 'Inter', size: 12 } } },
+            legend: { labels: { color: '#CBD5E1', font: { size: 12 } } },
             tooltip: {
               callbacks: {
                 label: (ctx) => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} votos`
@@ -944,11 +1406,11 @@
             }
           },
           scales: {
-            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { color: '#282D37' }, ticks: { color: '#94A3B8' } },
             y: { 
-              grid: { color: '#1e293b' }, 
+              grid: { color: '#282D37' }, 
               ticks: { 
-                color: '#94a3b8',
+                color: '#94A3B8',
                 callback: (val) => `${(val / 1000000).toFixed(0)} mi`
               } 
             }
@@ -962,7 +1424,7 @@
       chartInstances.classification = new Chart(ctxClass, {
         type: 'doughnut',
         data: {
-          labels: ['Virada Lula (Inversão de Liderança)', 'Virada Adversário', 'Outras Manutenções de Voto'],
+          labels: ['Virada Lula (Inversão)', 'Virada Adversário', 'Outras Manutenções de Voto'],
           datasets: [{
             data: [
               d.total_urnas_virada_lula || 0,
@@ -970,18 +1432,19 @@
               Math.max(0, d.total_secoes_pareadas - (d.total_urnas_virada_lula + d.total_urnas_virada_adv))
             ],
             backgroundColor: [
-              'rgba(16, 185, 129, 0.9)',
-              'rgba(59, 130, 246, 0.9)',
-              'rgba(71, 85, 105, 0.6)'
+              '#10B981',
+              '#3B82F6',
+              '#333A48'
             ],
-            borderWidth: 0,
+            borderWidth: 2,
+            borderColor: '#181B20'
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 11 }, boxWidth: 12 } },
+            legend: { position: 'bottom', labels: { color: '#CBD5E1', font: { size: 11 }, boxWidth: 12 } },
             tooltip: {
               callbacks: {
                 label: (ctx) => `${ctx.label}: ${formatNumber(ctx.raw)} seções`
@@ -1005,35 +1468,27 @@
       const height = 300;
       const padding = { top: 30, right: 30, bottom: 50, left: 60 };
 
-      // Valores dos passos
-      // Começo: -2.22
-      // Passo 1: +3.23 -> 1.01
-      // Passo 2: +1.83 -> 2.84
-      // Passo 3: +1.27 -> 4.11
-      // Passo 4: +0.32 -> 4.43
-      // Final: 4.43
       const steps = [
         { label: 'Diferença 1T', val: wf.diferenca_1t, isTotal: true, text: '-2,22 mi (Flávio à frente)' },
         ...wf.degraus.map(d => ({ label: d.grupo, delta: d.saldo_liquido, text: `+${d.saldo_liquido.toFixed(2)} mi (${d.grupo})` })),
         { label: 'Diferença 2T', val: wf.diferenca_2t, isTotal: true, text: '+4,43 mi (Lula Eleito)' }
       ];
 
-      // Computar início e fim de cada barra
       let currentVal = wf.diferenca_1t;
       const barData = [];
 
       // Barra 1: 1T (-2.22)
-      barData.push({ label: '1º Turno', start: 0, end: wf.diferenca_1t, delta: wf.diferenca_1t, isTotal: true, color: '#3b82f6' });
+      barData.push({ label: '1º Turno', start: 0, end: wf.diferenca_1t, delta: wf.diferenca_1t, isTotal: true, color: '#3B82F6' });
 
       // Degraus
       for (const d of wf.degraus) {
         const nextVal = currentVal + d.saldo_liquido;
-        barData.push({ label: d.grupo, start: currentVal, end: nextVal, delta: d.saldo_liquido, isTotal: false, color: '#10b981' });
+        barData.push({ label: d.grupo, start: currentVal, end: nextVal, delta: d.saldo_liquido, isTotal: false, color: '#10B981' });
         currentVal = nextVal;
       }
 
       // Barra final: 2T (+4.43)
-      barData.push({ label: '2º Turno', start: 0, end: wf.diferenca_2t, delta: wf.diferenca_2t, isTotal: true, color: '#ef4444' });
+      barData.push({ label: '2º Turno', start: 0, end: wf.diferenca_2t, delta: wf.diferenca_2t, isTotal: true, color: '#EF4444' });
 
       const minY = -3.0;
       const maxY = 5.5;
@@ -1048,13 +1503,13 @@
 
       // Linha Zero
       svgHtml += `<line x1="${padding.left}" y1="${zeroY}" x2="${width - padding.right}" y2="${zeroY}" stroke="#475569" stroke-dasharray="3,3" stroke-width="1.5" />`;
-      svgHtml += `<text x="${padding.left - 8}" y="${zeroY + 4}" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="end">0.0</text>`;
+      svgHtml += `<text x="${padding.left - 8}" y="${zeroY + 4}" fill="#64748b" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">0.0</text>`;
 
       // Guias horizontais
       [-2, 2, 4].forEach(tick => {
         const ty = scaleY(tick);
-        svgHtml += `<line x1="${padding.left}" y1="${ty}" x2="${width - padding.right}" y2="${ty}" stroke="#1e293b" stroke-width="1" />`;
-        svgHtml += `<text x="${padding.left - 8}" y="${ty + 4}" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="end">${tick > 0 ? '+' : ''}${tick} mi</text>`;
+        svgHtml += `<line x1="${padding.left}" y1="${ty}" x2="${width - padding.right}" y2="${ty}" stroke="#282D37" stroke-width="1" />`;
+        svgHtml += `<text x="${padding.left - 8}" y="${ty + 4}" fill="#64748b" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">${tick > 0 ? '+' : ''}${tick} mi</text>`;
       });
 
       // Desenhar Barras e Conectores
@@ -1064,23 +1519,20 @@
         const yBottom = scaleY(Math.min(b.start, b.end));
         const barH = Math.max(4, yBottom - yTop);
 
-        // Barra
         svgHtml += `
           <g class="cursor-pointer group">
-            <rect x="${x}" y="${yTop}" width="${barWidth}" height="${barH}" rx="5" fill="${b.color}" opacity="0.9" />
+            <rect x="${x}" y="${yTop}" width="${barWidth}" height="${barH}" rx="4" fill="${b.color}" opacity="0.95" />
             <title>${b.label}: ${b.delta > 0 ? '+' : ''}${b.delta.toFixed(2)} mi</title>
           </g>
         `;
 
-        // Rótulo do valor acima da barra
         const textY = b.delta >= 0 ? yTop - 6 : yBottom + 14;
         svgHtml += `
-          <text x="${x + barWidth / 2}" y="${textY}" fill="#f8fafc" font-size="11" font-weight="bold" font-family="JetBrains Mono" text-anchor="middle">
+          <text x="${x + barWidth / 2}" y="${textY}" fill="#F8FAFC" font-size="11" font-weight="bold" font-family="JetBrains Mono, monospace" text-anchor="middle">
             ${b.delta > 0 ? '+' : ''}${b.delta.toFixed(2)} mi
           </text>
         `;
 
-        // Rótulo no Eixo X (encurtado se necessário)
         let shortLabel = b.label;
         if (b.label === 'Ex-brancos e nulos') shortLabel = 'Ex-Brancos';
         if (b.label === 'Ausentes que voltaram a votar') shortLabel = 'Ausentes';
@@ -1088,16 +1540,15 @@
         if (b.label === 'Outros candidatos do 1T') shortLabel = '3ºs Cand.';
 
         svgHtml += `
-          <text x="${x + barWidth / 2}" y="${height - padding.bottom + 20}" fill="#94a3b8" font-size="10" font-weight="600" font-family="Inter" text-anchor="middle">
+          <text x="${x + barWidth / 2}" y="${height - padding.bottom + 20}" fill="#94A3B8" font-size="10" font-weight="600" text-anchor="middle">
             ${shortLabel}
           </text>
         `;
 
-        // Linha conectora pontilhada com a próxima barra
         if (idx < barData.length - 1 && !b.isTotal) {
           const nextX = scaleX(idx + 1) + 15;
           const connY = scaleY(b.end);
-          svgHtml += `<line x1="${x + barWidth}" y1="${connY}" x2="${nextX}" y2="${connY}" stroke="#64748b" stroke-dasharray="2,2" stroke-width="1.2" />`;
+          svgHtml += `<line x1="${x + barWidth}" y1="${connY}" x2="${nextX}" y2="${connY}" stroke="#64748B" stroke-dasharray="2,2" stroke-width="1.2" />`;
         }
       });
 
@@ -1105,89 +1556,93 @@
       container.innerHTML = svgHtml;
     }
 
-    // PILAR 2: SANKEY DIAGRAM (FLUXO ALUVIAL)
+    // PILAR 2: DIAGRAMA SANKEY SVG
     function renderSankey() {
       const container = document.getElementById('sankey-svg-container');
       const sk = globalData.sankey;
       if (!container || !sk) return;
 
-      const width = 740;
-      const height = 350;
-      const leftX = 130;
-      const rightX = 610;
+      const width = 760;
+      const height = 360;
+      const margin = { top: 30, right: 160, bottom: 30, left: 160 };
+
+      const leftNodes = {
+        branco_nulo_1t: { label: "Brancos / Nulos (1T)", color: "#A855F7", total: 5.95 },
+        nao_votou_1t: { label: "Ausentes / Abstenção (1T)", color: "#64748B", total: 4.49 },
+        outros_1t: { label: "Outros Candidatos (1T)", color: "#F59E0B", total: 9.32 },
+        perdas_flavio_1t: { label: "Perdas de Flávio (1T)", color: "#3B82F6", total: 1.70 },
+        perdas_lula_1t: { label: "Perdas de Lula (1T)", color: "#EF4444", total: 0.60 }
+      };
+
+      const rightNodes = {
+        lula_2t: { label: "Votos Lula (2T)", color: "#EF4444", total: 11.00 },
+        flavio_2t: { label: "Votos Flávio (2T)", color: "#3B82F6", total: 4.40 },
+        branco_nulo_2t: { label: "Brancos / Nulos (2T)", color: "#A855F7", total: 3.80 },
+        nao_votou_2t: { label: "Ausentes (2T)", color: "#64748B", total: 2.86 }
+      };
+
+      const leftKeys = Object.keys(leftNodes);
+      const rightKeys = Object.keys(rightNodes);
+
+      const usableHeight = height - margin.top - margin.bottom;
+      const leftGap = 14;
+      const rightGap = 16;
       const nodeWidth = 14;
 
-      // Nós da esquerda (1T)
-      const leftNodes = [
-        { id: 'nao_votou_1t', label: 'Não votou (1T)', total: 4.49, color: '#64748b' },
-        { id: 'branco_nulo_1t', label: 'Branco / Nulo (1T)', total: 5.98, color: '#a855f7' },
-        { id: 'outros_1t', label: 'Outros Cand. (1T)', total: 9.32, color: '#f59e0b' },
-        { id: 'perdas_flavio_1t', label: 'Migrados de Flávio', total: 1.70, color: '#3b82f6' },
-        { id: 'perdas_lula_1t', label: 'Migrados de Lula', total: 0.60, color: '#ef4444' }
-      ];
+      const sumLeft = Object.values(leftNodes).reduce((a, b) => a + b.total, 0);
+      const sumRight = Object.values(rightNodes).reduce((a, b) => a + b.total, 0);
 
-      // Nós da direita (2T)
-      const rightNodes = [
-        { id: 'lula_2t', label: 'Lula (2T)', total: 11.00, color: '#ef4444' },
-        { id: 'flavio_2t', label: 'Flávio (2T)', total: 4.40, color: '#3b82f6' },
-        { id: 'branco_nulo_2t', label: 'Branco / Nulo (2T)', total: 4.10, color: '#a855f7' },
-        { id: 'nao_votou_2t', label: 'Não votou (2T)', total: 1.40, color: '#64748b' }
-      ];
+      const scaleLeftH = (usableHeight - (leftKeys.length - 1) * leftGap) / sumLeft;
+      const scaleRightH = (usableHeight - (rightKeys.length - 1) * rightGap) / sumRight;
 
-      // Computar alturas proporcionais
-      const totalLeft = leftNodes.reduce((a, b) => a + b.total, 0);
-      const totalRight = rightNodes.reduce((a, b) => a + b.total, 0);
-      const availableHeight = height - 60;
-
-      let curY = 30;
       const leftPos = {};
-      leftNodes.forEach(n => {
-        const h = Math.max(16, (n.total / totalLeft) * availableHeight);
-        leftPos[n.id] = { y: curY, height: h, currentOffset: 0, ...n };
-        curY += h + 8;
+      let currY = margin.top;
+      leftKeys.forEach(k => {
+        const h = leftNodes[k].total * scaleLeftH;
+        leftPos[k] = { y: currY, height: h, ...leftNodes[k], currentOutY: currY };
+        currY += h + leftGap;
       });
 
-      curY = 30;
       const rightPos = {};
-      rightNodes.forEach(n => {
-        const h = Math.max(16, (n.total / totalRight) * availableHeight);
-        rightPos[n.id] = { y: curY, height: h, currentOffset: 0, ...n };
-        curY += h + 10;
+      currY = margin.top;
+      rightKeys.forEach(k => {
+        const h = rightNodes[k].total * scaleRightH;
+        rightPos[k] = { y: currY, height: h, ...rightNodes[k], currentInY: currY };
+        currY += h + rightGap;
       });
 
       let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
 
-      // Desenhar fitas (links)
+      const leftX = margin.left;
+      const rightX = width - margin.right - nodeWidth;
+
       sk.links.forEach(l => {
         const src = leftPos[l.source];
         const tgt = rightPos[l.target];
         if (!src || !tgt) return;
 
-        const linkHLeft = (l.value / src.total) * src.height;
-        const linkHRight = (l.value / tgt.total) * tgt.height;
+        const linkHLeft = l.value * scaleLeftH;
+        const linkHRight = l.value * scaleRightH;
 
-        const sy0 = src.y + src.currentOffset;
-        const sy1 = sy0 + linkHLeft;
-        src.currentOffset += linkHLeft;
+        const y0 = src.currentOutY;
+        const y1 = tgt.currentInY;
 
-        const ty0 = tgt.y + tgt.currentOffset;
-        const ty1 = ty0 + linkHRight;
-        tgt.currentOffset += linkHRight;
+        src.currentOutY += linkHLeft;
+        tgt.currentInY += linkHRight;
 
-        const x0 = leftX + nodeWidth;
-        const x1 = rightX;
-        const dx = (x1 - x0) * 0.5;
+        const cpX1 = leftX + nodeWidth + (rightX - leftX - nodeWidth) * 0.45;
+        const cpX2 = leftX + nodeWidth + (rightX - leftX - nodeWidth) * 0.55;
 
-        // Cor do link baseada no destino
-        let linkColor = '#64748b';
-        if (l.target === 'lula_2t') linkColor = '#ef4444';
-        else if (l.target === 'flavio_2t') linkColor = '#3b82f6';
-        else if (l.target === 'branco_nulo_2t') linkColor = '#a855f7';
-
-        const pathD = `M ${x0} ${sy0} C ${x0 + dx} ${sy0}, ${x1 - dx} ${ty0}, ${x1} ${ty0} L ${x1} ${ty1} C ${x1 - dx} ${ty1}, ${x0 + dx} ${sy1}, ${x0} ${sy1} Z`;
+        const pathD = `
+          M ${leftX + nodeWidth} ${y0}
+          C ${cpX1} ${y0}, ${cpX2} ${y1}, ${rightX} ${y1}
+          L ${rightX} ${y1 + linkHRight}
+          C ${cpX2} ${y1 + linkHRight}, ${cpX1} ${y0 + linkHLeft}, ${leftX + nodeWidth} ${y0 + linkHLeft}
+          Z
+        `;
 
         svgHtml += `
-          <path d="${pathD}" fill="${linkColor}" fill-opacity="0.35" class="sankey-link cursor-pointer">
+          <path d="${pathD}" fill="${tgt.color}" fill-opacity="0.35" stroke="${tgt.color}" stroke-opacity="0.5" stroke-width="0.5" class="sankey-link">
             <title>${src.label} &rarr; ${tgt.label}: ${l.value.toFixed(2)} milhões</title>
           </path>
         `;
@@ -1197,8 +1652,8 @@
       Object.values(leftPos).forEach(n => {
         svgHtml += `
           <rect x="${leftX}" y="${n.y}" width="${nodeWidth}" height="${n.height}" rx="3" fill="${n.color}" />
-          <text x="${leftX - 10}" y="${n.y + n.height / 2 + 4}" fill="#f1f5f9" font-size="11" font-weight="600" font-family="Inter" text-anchor="end">
-            ${n.label} <tspan font-family="JetBrains Mono" fill="#94a3b8" font-size="10">(${n.total.toFixed(2)} mi)</tspan>
+          <text x="${leftX - 10}" y="${n.y + n.height / 2 + 4}" fill="#F1F5F9" font-size="11" font-weight="600" text-anchor="end">
+            ${n.label} <tspan font-family="JetBrains Mono, monospace" fill="#94A3B8" font-size="10">(${n.total.toFixed(2)} mi)</tspan>
           </text>
         `;
       });
@@ -1207,8 +1662,8 @@
       Object.values(rightPos).forEach(n => {
         svgHtml += `
           <rect x="${rightX}" y="${n.y}" width="${nodeWidth}" height="${n.height}" rx="3" fill="${n.color}" />
-          <text x="${rightX + nodeWidth + 10}" y="${n.y + n.height / 2 + 4}" fill="#f1f5f9" font-size="11" font-weight="bold" font-family="Inter" text-anchor="start">
-            ${n.label} <tspan font-family="JetBrains Mono" fill="#38bdf8" font-size="10">(${n.total.toFixed(2)} mi)</tspan>
+          <text x="${rightX + nodeWidth + 10}" y="${n.y + n.height / 2 + 4}" fill="#F1F5F9" font-size="11" font-weight="bold" text-anchor="start">
+            ${n.label} <tspan font-family="JetBrains Mono, monospace" fill="#38BDF8" font-size="10">(${n.total.toFixed(2)} mi)</tspan>
           </text>
         `;
       });
@@ -1229,7 +1684,7 @@
         '↳ Subcandidato Caiado',
         '↳ Subcandidatos Zema / Renan',
         'Brancos e Nulos (1T)',
-        'Ausentes Retornaram (1T &rarr; 2T)'
+        'Ausentes Retornaram (1T → 2T)'
       ];
 
       const lulaData = [45, 55, 34, 39, 60, 68];
@@ -1245,25 +1700,25 @@
             {
               label: 'Destino Lula',
               data: lulaData,
-              backgroundColor: 'rgba(239, 68, 68, 0.9)',
+              backgroundColor: '#EF4444',
               borderRadius: 3
             },
             {
               label: 'Destino Flávio',
               data: flavioData,
-              backgroundColor: 'rgba(59, 130, 246, 0.9)',
+              backgroundColor: '#3B82F6',
               borderRadius: 3
             },
             {
               label: 'Branco / Nulo',
               data: bnData,
-              backgroundColor: 'rgba(168, 85, 247, 0.85)',
+              backgroundColor: '#A855F7',
               borderRadius: 3
             },
             {
               label: 'Não Votou',
               data: ausenteData,
-              backgroundColor: 'rgba(100, 116, 139, 0.7)',
+              backgroundColor: '#64748B',
               borderRadius: 3
             }
           ]
@@ -1273,7 +1728,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } },
+            legend: { position: 'bottom', labels: { color: '#CBD5E1', font: { size: 10 }, boxWidth: 10 } },
             tooltip: {
               callbacks: {
                 label: (c) => `${c.dataset.label}: ${c.raw}%`
@@ -1284,13 +1739,13 @@
             x: { 
               stacked: true, 
               max: 100, 
-              grid: { color: '#1e293b' },
-              ticks: { color: '#94a3b8', callback: (v) => `${v}%` }
+              grid: { color: '#282D37' },
+              ticks: { color: '#94A3B8', callback: (v) => `${v}%` }
             },
             y: { 
               stacked: true, 
-              grid: { color: '#1e293b' },
-              ticks: { color: '#cbd5e1', font: { size: 10 } }
+              grid: { color: '#282D37' },
+              ticks: { color: '#CBD5E1', font: { size: 10 } }
             }
           }
         }
@@ -1309,7 +1764,6 @@
         y: p.y_delta_pp_lula
       }));
 
-      // Gerar reta de tendência: y = alpha + beta * x
       const alpha = (sc.regressao && sc.regressao.intercepto_alpha) || 3.65;
       const beta = (sc.regressao && sc.regressao.coeficiente_angular_beta) || 0.80;
       
@@ -1325,16 +1779,16 @@
             {
               label: 'Seções Eleitorais Auditadas',
               data: scatterPoints,
-              backgroundColor: 'rgba(56, 189, 248, 0.45)',
+              backgroundColor: 'rgba(56, 189, 248, 0.5)',
               borderColor: 'transparent',
-              pointRadius: 2.5,
-              pointHoverRadius: 4
+              pointRadius: 3,
+              pointHoverRadius: 5
             },
             {
               type: 'line',
               label: 'Reta de Regressão Ponderada (WLS)',
               data: lineData,
-              borderColor: 'rgba(239, 68, 68, 1)',
+              borderColor: '#EF4444',
               borderWidth: 2.5,
               fill: false,
               pointRadius: 0
@@ -1345,7 +1799,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } },
+            legend: { position: 'bottom', labels: { color: '#CBD5E1', font: { size: 10 } } },
             tooltip: {
               callbacks: {
                 label: (ctx) => `Brancos/Nulos: ${ctx.parsed.x.toFixed(2)}% | Δ pp Lula: +${ctx.parsed.y.toFixed(2)} pp`
@@ -1354,14 +1808,14 @@
           },
           scales: {
             x: {
-              title: { display: true, text: 'Brancos e Nulos 1ºT (% do eleitorado apto)', color: '#94a3b8', font: { size: 10 } },
-              grid: { color: '#1e293b' },
-              ticks: { color: '#94a3b8' }
+              title: { display: true, text: 'Brancos e Nulos 1ºT (% do eleitorado apto)', color: '#94A3B8', font: { size: 10 } },
+              grid: { color: '#282D37' },
+              ticks: { color: '#94A3B8' }
             },
             y: {
-              title: { display: true, text: 'Crescimento de Lula 2ºT (pp)', color: '#94a3b8', font: { size: 10 } },
-              grid: { color: '#1e293b' },
-              ticks: { color: '#94a3b8', callback: (v) => `+${v} pp` }
+              title: { display: true, text: 'Crescimento de Lula 2ºT (pp)', color: '#94A3B8', font: { size: 10 } },
+              grid: { color: '#282D37' },
+              ticks: { color: '#94A3B8', callback: (v) => `+${v} pp` }
             }
           }
         }
@@ -1380,19 +1834,19 @@
         const lula = item.lula;
         const flavio = item.flavio;
         return `
-          <div class="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-3">
+          <div class="bg-[#14171C] border border-[#282D37] p-4 rounded-xl flex flex-col justify-between space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-sm font-bold text-white flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/20 font-mono text-xs">${item.sg_uf}</span>
+                <span class="hero-pill font-mono text-xs" style="color: #38BDF8; border-color: #38BDF8;">${item.sg_uf}</span>
                 ${item.nome_estado}
               </span>
-              <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-mono font-bold text-[11px] border border-emerald-500/25">
+              <span class="hero-pill hero-pill-highlight font-mono text-[11px]">
                 ${item.razao_crescimento.toFixed(2)}x mais rápido
               </span>
             </div>
 
             <!-- Dados Lula -->
-            <div class="border-t border-slate-800/60 pt-2 space-y-1">
+            <div class="border-t border-[#242933] pt-2 space-y-1">
               <div class="flex items-center justify-between text-xs">
                 <span class="text-red-400 font-semibold">Lula (13)</span>
                 <span class="font-mono text-white font-bold">${formatNumber(lula.votos_2t)}</span>
@@ -1404,7 +1858,7 @@
             </div>
 
             <!-- Dados Flávio -->
-            <div class="border-t border-slate-800/60 pt-2 space-y-1">
+            <div class="border-t border-[#242933] pt-2 space-y-1">
               <div class="flex items-center justify-between text-xs">
                 <span class="text-blue-400 font-semibold">Flávio (22)</span>
                 <span class="font-mono text-white font-bold">${formatNumber(flavio.votos_2t)}</span>
@@ -1418,7 +1872,6 @@
         `;
       }).join('');
 
-      // Gráfico de Barras do Sudeste
       const ctx = document.getElementById('chart-southeast-comparison');
       if (!ctx) return;
       if (chartInstances.southeastComparison) chartInstances.southeastComparison.destroy();
@@ -1435,13 +1888,13 @@
             {
               label: 'Avanço Nominal de Lula (Δ Votos)',
               data: lulaDeltas,
-              backgroundColor: 'rgba(239, 68, 68, 0.9)',
+              backgroundColor: '#EF4444',
               borderRadius: 6
             },
             {
               label: 'Avanço Nominal de Flávio (Δ Votos)',
               data: flavioDeltas,
-              backgroundColor: 'rgba(59, 130, 246, 0.9)',
+              backgroundColor: '#3B82F6',
               borderRadius: 6
             }
           ]
@@ -1450,7 +1903,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: '#cbd5e1' } },
+            legend: { labels: { color: '#CBD5E1' } },
             tooltip: {
               callbacks: {
                 label: (c) => `${c.dataset.label}: ${formatDelta(c.raw)} votos`
@@ -1458,10 +1911,10 @@
             }
           },
           scales: {
-            x: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } },
+            x: { grid: { color: '#282D37' }, ticks: { color: '#CBD5E1' } },
             y: { 
-              grid: { color: '#1e293b' }, 
-              ticks: { color: '#94a3b8', callback: (v) => `${(v / 1000000).toFixed(1)} mi` } 
+              grid: { color: '#282D37' }, 
+              ticks: { color: '#94A3B8', callback: (v) => `${(v / 1000000).toFixed(1)} mi` } 
             }
           }
         }
@@ -1472,7 +1925,6 @@
       const ufList = globalData.ufList;
       if (!ufList || !ufList.length) return;
 
-      // 1. Ranking por Δ pp Lula
       const sortedByPp = [...ufList].sort((a, b) => b.delta_pp_lula - a.delta_pp_lula);
       const ctxPp = document.getElementById('chart-states-pp');
       if (ctxPp) {
@@ -1484,7 +1936,7 @@
             datasets: [{
               label: 'Crescimento de Lula (Δ pp)',
               data: sortedByPp.map(u => u.delta_pp_lula),
-              backgroundColor: 'rgba(16, 185, 129, 0.85)',
+              backgroundColor: '#10B981',
               borderRadius: 4
             }]
           },
@@ -1499,14 +1951,13 @@
               }
             },
             scales: {
-              x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', callback: (v) => `+${v} pp` } },
-              y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1', font: { size: 9, family: 'JetBrains Mono' } } }
+              x: { grid: { color: '#282D37' }, ticks: { color: '#94A3B8', callback: (v) => `+${v} pp` } },
+              y: { grid: { color: '#282D37' }, ticks: { color: '#CBD5E1', font: { size: 9, family: 'JetBrains Mono, monospace' } } }
             }
           }
         });
       }
 
-      // 2. Ranking por Δ Margem Líquida
       const sortedByMargin = [...ufList].sort((a, b) => b.delta_margem - a.delta_margem);
       const ctxMargin = document.getElementById('chart-states-margin');
       if (ctxMargin) {
@@ -1518,7 +1969,7 @@
             datasets: [{
               label: 'Saldo Líquido de Margem (Δ Margem)',
               data: sortedByMargin.map(u => u.delta_margem),
-              backgroundColor: 'rgba(99, 102, 241, 0.85)',
+              backgroundColor: '#6366F1',
               borderRadius: 4
             }]
           },
@@ -1534,10 +1985,10 @@
             },
             scales: {
               x: { 
-                grid: { color: '#1e293b' }, 
-                ticks: { color: '#94a3b8', callback: (v) => `${(v / 1000).toFixed(0)}k` } 
+                grid: { color: '#282D37' }, 
+                ticks: { color: '#94A3B8', callback: (v) => `${(v / 1000).toFixed(0)}k` } 
               },
-              y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1', font: { size: 9, family: 'JetBrains Mono' } } }
+              y: { grid: { color: '#282D37' }, ticks: { color: '#CBD5E1', font: { size: 9, family: 'JetBrains Mono, monospace' } } }
             }
           }
         });
@@ -1552,13 +2003,13 @@
       container.innerHTML = ufList.map(u => {
         const isLulaWinner = u.votos_lula_2t > u.votos_adv_2t;
         const isSelected = selectedUfFilter === u.sg_uf;
-        const borderClass = isSelected ? 'ring-2 ring-emerald-400 border-emerald-400' : 'border-slate-800';
+        const borderClass = isSelected ? 'ring-2 ring-sky-400 border-sky-400 bg-[#242933]' : 'border-[#282D37] bg-[#14171C]';
 
         return `
           <div onclick="filterByUf('${u.sg_uf}')" 
-               class="bg-slate-950/70 border ${borderClass} hover:border-slate-600 p-2.5 rounded-xl cursor-pointer transition text-center group">
+               class="border ${borderClass} hover:border-slate-500 p-2.5 rounded-xl cursor-pointer transition text-center group">
             <div class="flex items-center justify-between mb-1">
-              <span class="font-bold text-xs font-mono text-white group-hover:text-emerald-400 transition">${u.sg_uf}</span>
+              <span class="font-bold text-xs font-mono text-white group-hover:text-sky-400 transition">${u.sg_uf}</span>
               <span class="w-2 h-2 rounded-full ${isLulaWinner ? 'bg-red-500' : 'bg-blue-500'}"></span>
             </div>
             <div class="text-[11px] font-mono font-bold ${isLulaWinner ? 'text-red-400' : 'text-blue-400'}">
@@ -1606,13 +2057,13 @@
       if (!tbody) return;
 
       if (!ufList.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-slate-500 font-sans">Nenhum estado localizado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-slate-500">Nenhum estado localizado.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = ufList.map(u => `
-        <tr class="hover:bg-slate-800/40 transition ${selectedUfFilter === u.sg_uf ? 'bg-emerald-500/10' : ''}">
-          <td class="px-4 py-2.5 font-bold text-emerald-400 font-sans text-sm">${u.sg_uf}</td>
+        <tr class="hover:bg-[#1F242D] transition ${selectedUfFilter === u.sg_uf ? 'bg-sky-500/10' : ''}">
+          <td class="px-4 py-2.5 font-bold text-sky-400 text-sm">${u.sg_uf}</td>
           <td class="px-4 py-2.5 text-right font-mono">${formatNumber(u.total_secoes)}</td>
           <td class="px-4 py-2.5 text-right font-mono">${formatNumber(u.votos_lula_1t)}</td>
           <td class="px-4 py-2.5 text-right font-bold text-white font-mono">${formatNumber(u.votos_lula_2t)}</td>
@@ -1634,7 +2085,6 @@
       const badge = document.getElementById('badge-swing-count');
       if (badge) badge.innerText = `${cities.length} cidades detectadas`;
 
-      // Preencher o select de cidades
       if (select && cities.length) {
         select.innerHTML = cities.map(c => `
           <option value="${c.nm_municipio}" ${c.nm_municipio.toUpperCase() === 'NANUQUE' ? 'selected' : ''}>
@@ -1642,28 +2092,25 @@
           </option>
         `).join('');
         
-        // Renderizar Nanuque ou primeira cidade
         const defaultCity = cities.find(c => c.nm_municipio.toUpperCase() === 'NANUQUE') || cities[0];
         renderSelectedSwingCityCard(defaultCity.nm_municipio);
       }
 
-      // Renderizar Top Swing Cities Chart
       renderTopSwingCitiesChart();
 
-      // Renderizar Tabela de Swing Cities
       const tbody = document.getElementById('tbody-swing-cities');
       if (tbody) {
         tbody.innerHTML = cities.slice(0, 100).map(c => `
-          <tr class="hover:bg-slate-800/40 transition">
+          <tr class="hover:bg-[#1F242D] transition">
             <td class="px-4 py-2 font-bold text-slate-400">${c.sg_uf}</td>
-            <td class="px-4 py-2 font-sans font-semibold text-white">${c.nm_municipio}</td>
+            <td class="px-4 py-2 font-semibold text-white">${c.nm_municipio}</td>
             <td class="px-4 py-2 text-right">${formatNumber(c.votos_lula_1t)}</td>
             <td class="px-4 py-2 text-right font-bold text-white">${formatNumber(c.votos_lula_2t)}</td>
             <td class="px-4 py-2 text-right font-bold ${c.delta_votos_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(c.delta_votos_lula)}</td>
             <td class="px-4 py-2 text-right font-bold ${c.delta_pp_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(c.delta_pp_lula)} pp</td>
             <td class="px-4 py-2 text-right">${formatDelta(c.delta_margem)}</td>
             <td class="px-4 py-2 text-center">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status_virada_municipio === 'VIRADA_LULA' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">
+              <span class="hero-pill ${c.status_virada_municipio === 'VIRADA_LULA' ? 'hero-pill-highlight' : ''}">
                 ${c.status_virada_municipio}
               </span>
             </td>
@@ -1683,24 +2130,24 @@
       const pctFlavio2t = 100 - pctLula2t;
 
       card.innerHTML = `
-        <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3 mb-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 border-b border-[#282D37] pb-3 mb-4">
           <div>
             <div class="text-xs text-slate-400 uppercase font-semibold">Município Auditado</div>
             <h3 class="text-xl font-black text-white flex items-center gap-2">
-              ${city.nm_municipio} <span class="text-sm font-mono text-amber-400">(${city.sg_uf})</span>
+              ${city.nm_municipio} <span class="text-sm font-mono text-sky-400">(${city.sg_uf})</span>
             </h3>
           </div>
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-            <i class="fa-solid fa-arrows-spin"></i> VIRADA CONFIRMADA • 2T
+          <span class="hero-pill hero-pill-highlight">
+            <i class="fa-solid fa-arrows-spin mr-1.5"></i> VIRADA CONFIRMADA • 2T
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- 1º Turno -->
-          <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl space-y-3">
+          <div class="bg-[#181B20] border border-[#282D37] p-4 rounded-xl space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Placar 1º Turno (1T)</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Flávio na Frente</span>
+              <span class="hero-pill" style="border-color: #3B82F6; color: #93C5FD;">Flávio na Frente</span>
             </div>
             
             <div class="space-y-2">
@@ -1709,8 +2156,10 @@
                   <span class="text-blue-400 font-semibold">Flávio Bolsonaro (22)</span>
                   <span class="font-mono text-white font-bold">${pctFlavio1t.toFixed(2)}% (${formatNumber(city.votos_adv_1t)})</span>
                 </div>
-                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${pctFlavio1t}%"></div>
+                <div class="hero-bar-track" style="margin: 4px 0;">
+                  <div class="hero-bar-split">
+                    <div style="width: ${pctFlavio1t}%; background-color: var(--color-flavio); height: 100%;"></div>
+                  </div>
                 </div>
               </div>
 
@@ -1719,20 +2168,22 @@
                   <span class="text-red-400 font-semibold">Luiz Inácio Lula da Silva (13)</span>
                   <span class="font-mono text-white font-bold">${pctLula1t.toFixed(2)}% (${formatNumber(city.votos_lula_1t)})</span>
                 </div>
-                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div class="bg-red-500 h-2.5 rounded-full" style="width: ${pctLula1t}%"></div>
+                <div class="hero-bar-track" style="margin: 4px 0;">
+                  <div class="hero-bar-split">
+                    <div style="width: ${pctLula1t}%; background-color: var(--color-lula); height: 100%;"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- 2º Turno -->
-          <div class="bg-slate-900/90 border border-emerald-500/30 p-4 rounded-xl space-y-3 shadow-lg shadow-emerald-950/20">
+          <div class="bg-[#181B20] border border-emerald-500/30 p-4 rounded-xl space-y-3 shadow-lg shadow-emerald-950/20">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                 <i class="fa-solid fa-trophy"></i> Placar 2º Turno (2T Oficial)
               </span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Lula Eleito</span>
+              <span class="hero-pill hero-pill-highlight">Lula Eleito</span>
             </div>
 
             <div class="space-y-2">
@@ -1741,8 +2192,10 @@
                   <span class="text-red-400 font-bold">Luiz Inácio Lula da Silva (13)</span>
                   <span class="font-mono text-white font-black">${pctLula2t.toFixed(2)}% (${formatNumber(city.votos_lula_2t)})</span>
                 </div>
-                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div class="bg-red-500 h-2.5 rounded-full" style="width: ${pctLula2t}%"></div>
+                <div class="hero-bar-track" style="margin: 4px 0;">
+                  <div class="hero-bar-split">
+                    <div style="width: ${pctLula2t}%; background-color: var(--color-lula); height: 100%;"></div>
+                  </div>
                 </div>
               </div>
 
@@ -1751,15 +2204,17 @@
                   <span class="text-blue-400 font-semibold">Flávio Bolsonaro (22)</span>
                   <span class="font-mono text-white font-bold">${pctFlavio2t.toFixed(2)}% (${formatNumber(city.votos_adv_2t)})</span>
                 </div>
-                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${pctFlavio2t}%"></div>
+                <div class="hero-bar-track" style="margin: 4px 0;">
+                  <div class="hero-bar-split">
+                    <div style="width: ${pctFlavio2t}%; background-color: var(--color-flavio); height: 100%;"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div class="mt-4 pt-3 border-t border-[#282D37] flex items-center justify-between text-xs text-slate-400">
           <span>Ganho de Lula no município: <strong class="text-emerald-400 font-mono">+${city.delta_votos_lula ? formatNumber(city.delta_votos_lula) : '--'} votos (+${city.delta_pp_lula ? city.delta_pp_lula.toFixed(2) : '--'} pp)</strong></span>
           <span>Inversão de Margem: <strong class="text-white font-mono">+${formatNumber(city.delta_margem)} votos</strong></span>
         </div>
@@ -1781,7 +2236,7 @@
           datasets: [{
             label: 'Saldo Líquido de Virada (Δ Margem)',
             data: top12.map(c => c.delta_margem),
-            backgroundColor: 'rgba(245, 158, 11, 0.85)',
+            backgroundColor: '#F59E0B',
             borderRadius: 5
           }]
         },
@@ -1799,12 +2254,12 @@
           },
           scales: {
             x: { 
-              grid: { color: '#1e293b' },
-              ticks: { color: '#94a3b8', callback: (v) => formatNumber(v) }
+              grid: { color: '#282D37' }, 
+              ticks: { color: '#94A3B8', callback: (v) => formatNumber(v) } 
             },
-            y: {
-              grid: { color: '#1e293b' },
-              ticks: { color: '#cbd5e1', font: { size: 10 } }
+            y: { 
+              grid: { color: '#282D37' }, 
+              ticks: { color: '#CBD5E1', font: { size: 10 } } 
             }
           }
         }
@@ -1835,13 +2290,13 @@
             {
               label: 'Luiz Inácio Lula da Silva (Δ pp)',
               data: lulaDeltaPp,
-              backgroundColor: 'rgba(239, 68, 68, 0.9)',
+              backgroundColor: '#EF4444',
               borderRadius: 6
             },
             {
               label: 'Flávio Bolsonaro (Δ pp)',
               data: flavioDeltaPp,
-              backgroundColor: 'rgba(59, 130, 246, 0.9)',
+              backgroundColor: '#3B82F6',
               borderRadius: 6
             }
           ]
@@ -1850,7 +2305,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: '#cbd5e1' } },
+            legend: { labels: { color: '#CBD5E1' } },
             tooltip: {
               callbacks: {
                 label: (c) => `${c.dataset.label}: ${c.raw > 0 ? '+' : ''}${c.raw.toFixed(1)} pp`
@@ -1858,10 +2313,10 @@
             }
           },
           scales: {
-            x: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1', font: { size: 10 } } },
+            x: { grid: { color: '#282D37' }, ticks: { color: '#CBD5E1', font: { size: 10 } } },
             y: { 
-              grid: { color: '#1e293b' }, 
-              ticks: { color: '#94a3b8', callback: (v) => `${v > 0 ? '+' : ''}${v} pp` } 
+              grid: { color: '#282D37' }, 
+              ticks: { color: '#94A3B8', callback: (v) => `${v > 0 ? '+' : ''}${v} pp` } 
             }
           }
         }
@@ -1873,7 +2328,7 @@
         grid.innerHTML = lulaCaps.map(c => {
           const flavioPp = flavioMap[`${c.cidade}_${c.sg_uf}`] || 0.0;
           return `
-            <div class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl space-y-1">
+            <div class="bg-[#14171C] border border-[#282D37] p-3 rounded-xl space-y-1">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-xs text-white">${c.cidade}</span>
                 <span class="text-[10px] text-slate-400 font-mono">${c.sg_uf}</span>
@@ -1884,7 +2339,7 @@
               <div class="text-[11px] font-mono ${flavioPp < 0 ? 'text-red-400 font-bold' : 'text-blue-400'}">
                 Flávio: ${flavioPp > 0 ? '+' : ''}${flavioPp.toFixed(1)} pp
               </div>
-              <div class="text-[10px] text-slate-500 font-mono pt-1 border-t border-slate-800/60">
+              <div class="text-[10px] text-slate-500 font-mono pt-1 border-t border-[#242933]">
                 ${(c.aptos / 1000000).toFixed(1)} mi aptos
               </div>
             </div>
@@ -1899,10 +2354,10 @@
       const btnFlavio = document.getElementById('btn-bubble-flavio');
 
       if (cand === 'lula') {
-        btnLula.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white transition flex items-center gap-1.5';
+        btnLula.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white transition flex items-center gap-1.5 shadow-sm';
         btnFlavio.className = 'px-4 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5';
       } else {
-        btnFlavio.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition flex items-center gap-1.5';
+        btnFlavio.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition flex items-center gap-1.5 shadow-sm';
         btnLula.className = 'px-4 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5';
       }
 
@@ -1920,7 +2375,7 @@
         if (titleEl) titleEl.innerText = "Avanço de Lula entre 1ºT e 2ºT (Ponderado pelo Eleitorado)";
         if (legendEl) {
           legendEl.innerHTML = `
-            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-900"></span> >= +8 pp</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-800"></span> >= +8 pp</span>
             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-600"></span> +6 a +8 pp</span>
             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-400"></span> +4 a +6 pp</span>
           `;
@@ -1928,10 +2383,9 @@
 
         const caps = (payload && payload.destaques_capitais) || [];
         container.innerHTML = caps.map(c => {
-          // Raio proporcional à raiz quadrada de aptos
           const rPx = Math.round(Math.sqrt(c.aptos / 10000) * 1.5);
           return `
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+            <div class="bg-[#181B20] border border-[#282D37] p-4 rounded-xl flex items-center space-x-4">
               <div class="flex-shrink-0 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 font-bold font-mono border border-red-500/30" style="width: ${Math.max(48, Math.min(84, rPx))}px; height: ${Math.max(48, Math.min(84, rPx))}px;">
                 +${c.delta_pp.toFixed(1)}
               </div>
@@ -1961,7 +2415,7 @@
           const colorClass = isRecuo ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30';
 
           return `
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center space-x-4">
+            <div class="bg-[#181B20] border border-[#282D37] p-4 rounded-xl flex items-center space-x-4">
               <div class="flex-shrink-0 flex items-center justify-center rounded-full font-bold font-mono border ${colorClass}" style="width: ${Math.max(48, Math.min(84, rPx))}px; height: ${Math.max(48, Math.min(84, rPx))}px;">
                 ${c.delta_pp > 0 ? '+' : ''}${c.delta_pp.toFixed(1)}
               </div>
@@ -1994,24 +2448,24 @@
       }
 
       tbody.innerHTML = secoes.slice(0, 100).map(s => {
-        let badgeClass = 'bg-slate-800 text-slate-400 border border-slate-700';
-        if (s.classificacao_virada === 'VIRADA_LULA') badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-        else if (s.classificacao_virada === 'VIRADA_ADVERSARIO') badgeClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-        else if (s.classificacao_virada === 'MANTEVE_LIDERANCA') badgeClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        let badgeHtml = '<span class="hero-pill font-mono text-[10px]">' + s.classificacao_virada + '</span>';
+        if (s.classificacao_virada === 'VIRADA_LULA') {
+          badgeHtml = '<span class="hero-pill hero-pill-highlight font-mono text-[10px]">VIRADA_LULA</span>';
+        } else if (s.classificacao_virada === 'VIRADA_ADVERSARIO') {
+          badgeHtml = '<span class="hero-pill font-mono text-[10px]" style="border-color: #3B82F6; color: #93C5FD;">VIRADA_ADVERSARIO</span>';
+        } else if (s.classificacao_virada === 'MANTEVE_LIDERANCA') {
+          badgeHtml = '<span class="hero-pill hero-pill-tie font-mono text-[10px]">MANTEVE_LIDERANCA</span>';
+        }
 
         return `
-          <tr class="hover:bg-slate-800/40 transition">
-            <td class="px-4 py-2.5 text-white font-sans font-medium">${s.nm_municipio || '--'} <span class="text-slate-500">(${s.sg_uf})</span></td>
-            <td class="px-4 py-2.5 font-mono">Z ${s.nr_zona} / S ${s.nr_secao}</td>
+          <tr class="hover:bg-[#1F242D] transition">
+            <td class="px-4 py-2.5 text-white font-medium">${s.nm_municipio || '--'} <span class="text-slate-500 font-mono">(${s.sg_uf})</span></td>
+            <td class="px-4 py-2.5 font-mono text-slate-400">Z ${s.nr_zona} / S ${s.nr_secao}</td>
             <td class="px-4 py-2.5 text-right font-mono">${s.votos_lula_1t} &rarr; <strong class="text-white">${s.votos_lula_2t}</strong></td>
             <td class="px-4 py-2.5 text-right font-mono">${s.votos_adv_1t} &rarr; <strong class="text-white">${s.votos_adv_2t}</strong></td>
             <td class="px-4 py-2.5 text-right font-bold font-mono ${s.delta_votos_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(s.delta_votos_lula)}</td>
-            <td class="px-4 py-2.5 text-right font-mono">${formatDelta(s.delta_margem)}</td>
-            <td class="px-4 py-2.5 text-center">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">
-                ${s.classificacao_virada}
-              </span>
-            </td>
+            <td class="px-4 py-2.5 text-right font-mono text-slate-300">${formatDelta(s.delta_margem)}</td>
+            <td class="px-4 py-2.5 text-center">${badgeHtml}</td>
           </tr>
         `;
       }).join('');
