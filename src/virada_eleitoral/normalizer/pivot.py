@@ -38,7 +38,22 @@ def pivot_presidential_bu(
 
     active_conn = conn or duckdb.connect(":memory:")
 
-    query = """
+    # Detectar nomes oficiais de colunas que variam entre anos no TSE
+    csv_str = str(csv_path).replace("\\", "/")
+    try:
+        sample_cols = active_conn.sql(
+            f"SELECT * FROM read_csv('{csv_str}', delim=';', header=true, "
+            f"encoding='iso-8859-1', ignore_errors=true, all_varchar=true) LIMIT 0"
+        ).columns
+    except duckdb.Error as e:
+        raise SchemaValidationError(
+            f"Erro ao ler cabeçalho do Boletim de Urna '{csv_path.name}': {e}"
+        ) from e
+
+    cargo_col = "CD_CARGO_PERGUNTA" if "CD_CARGO_PERGUNTA" in sample_cols else "CD_CARGO"
+    abst_col = "QT_ABSTENCOES" if "QT_ABSTENCOES" in sample_cols else "QT_ABSTENCAO"
+
+    query = f"""
     WITH raw_filtered AS (
         SELECT
             UPPER(TRIM(CAST(SG_UF AS VARCHAR))) AS sg_uf,
@@ -50,7 +65,7 @@ def pivot_presidential_bu(
             CAST(QT_VOTOS AS INTEGER) AS qt_votos,
             CAST(QT_APTOS AS INTEGER) AS qt_aptos,
             CAST(QT_COMPARECIMENTO AS INTEGER) AS qt_comp,
-            CAST(QT_ABSTENCAO AS INTEGER) AS qt_abst
+            CAST({abst_col} AS INTEGER) AS qt_abst
         FROM read_csv(
             ?,
             delim = ';',
@@ -59,7 +74,7 @@ def pivot_presidential_bu(
             ignore_errors = true,
             all_varchar = true
         )
-        WHERE CAST(CD_CARGO AS INTEGER) = 1
+        WHERE CAST({cargo_col} AS INTEGER) = 1
     )
     SELECT
         ? AS ano_eleicao,
