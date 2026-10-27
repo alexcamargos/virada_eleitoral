@@ -22,7 +22,7 @@ def test_pipeline_settings_defaults() -> None:
     """Verifica se os valores padrão do PipelineSettings estão em conformidade com as specs."""
     settings = get_settings()
 
-    assert settings.ano_eleicao_padrao == 2022
+    assert settings.ano_eleicao_padrao == 2026
     assert settings.cargo_presidente_codigo == 1
     assert settings.numero_candidato_lula == 13
     assert settings.numero_candidato_bolsonaro == 22

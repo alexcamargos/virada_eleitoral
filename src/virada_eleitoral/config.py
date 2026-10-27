@@ -96,8 +96,8 @@ class PipelineSettings(BaseSettings):
         """
         return self.data_dir / "virada_eleitoral.duckdb"
 
-    # Parâmetros eleitorais canônicos
-    ano_eleicao_padrao: int = 2022
+    # Parâmetros eleitorais canônicos (Eleições Presidenciais 2026)
+    ano_eleicao_padrao: int = 2026
     cargo_presidente_codigo: int = 1
     numero_candidato_lula: int = 13
     numero_candidato_bolsonaro: int = 22
