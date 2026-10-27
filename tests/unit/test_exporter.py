@@ -17,14 +17,18 @@ from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
 from virada_eleitoral.contracts.exceptions import ExportError
 from virada_eleitoral.contracts.models import (
     EcologicalRegressionScatterPayload,
+    FlavioPerformanceBubbleMapPayload,
+    LulaAdvanceBubbleMapPayload,
     NationalSummaryPayload,
     SankeyVoteFlowsPayload,
+    SoutheastDeepDivePayload,
     StateSummaryItem,
     SwingCityPayload,
     TransitionDistributionPayload,
     WaterfallTurnoverPayload,
 )
 from virada_eleitoral.export.geo_exporter import (
+    export_cartographic_payloads,
     export_enriched_geojson,
     export_wasm_partitions,
     merge_geojson_with_municipal_metrics,
@@ -49,9 +53,9 @@ def populated_consolidator(tmp_path_factory: pytest.TempPathFactory) -> DuckDbCo
     """
     tmp_dir = tmp_path_factory.mktemp("exporter_fixtures")
     path_1t, path_2t = build_synthetic_bu_dataset(tmp_dir)
-    pivoted_1t = pivot_presidential_bu(path_1t, ano=2022, turno=1)
-    pivoted_2t = pivot_presidential_bu(path_2t, ano=2022, turno=2)
-    paired_df, _ = pair_turnover_sections(pivoted_1t, pivoted_2t, ano=2022)
+    pivoted_1t = pivot_presidential_bu(path_1t, ano=2026, turno=1)
+    pivoted_2t = pivot_presidential_bu(path_2t, ano=2026, turno=2)
+    paired_df, _ = pair_turnover_sections(pivoted_1t, pivoted_2t, ano=2026)
 
     consolidator = DuckDbConsolidator()
     consolidator.consolidate_from_dataframe(paired_df)
@@ -63,7 +67,7 @@ def test_export_static_json_payloads_success(
 ) -> None:
     """Valida a exportação completa de todos os payloads JSON estáticos."""
     export_dir = tmp_path / "export"
-    files = export_static_json_payloads(populated_consolidator, export_dir, ano=2022)
+    files = export_static_json_payloads(populated_consolidator, export_dir, ano=2026)
 
     assert "summary_national" in files
     assert "summary_uf" in files
@@ -79,7 +83,7 @@ def test_export_static_json_payloads_success(
     with files["summary_national"].open("r", encoding="utf-8") as f:
         national_data = json.load(f)
     national_payload = NationalSummaryPayload.model_validate(national_data)
-    assert national_payload.ano_eleicao == 2022
+    assert national_payload.ano_eleicao == 2026
 
     # 2. Validar schema de summary_uf.json
     with files["summary_uf"].open("r", encoding="utf-8") as f:
@@ -124,7 +128,7 @@ def test_export_static_json_payloads_success(
     with files["metadata"].open("r", encoding="utf-8") as f:
         meta_data = json.load(f)
     assert meta_data["pipeline"] == "virada_eleitoral"
-    assert meta_data["ano_eleicao"] == 2022
+    assert meta_data["ano_eleicao"] == 2026
 
     # Orçamento SLA: summary_national + summary_uf <= 200 KB
     combined_size = files["summary_national"].stat().st_size + files["summary_uf"].stat().st_size
@@ -142,7 +146,7 @@ def test_export_static_json_payloads_budget_exceeded(
     monkeypatch.setattr("virada_eleitoral.export.json_exporter.STATIC_PAYLOAD_MAX_BYTES", 10)
 
     with pytest.raises(ExportError, match="Orçamento excedido"):
-        export_static_json_payloads(populated_consolidator, export_dir, ano=2022)
+        export_static_json_payloads(populated_consolidator, export_dir, ano=2026)
 
 
 def test_merge_geojson_with_municipal_metrics(
@@ -187,6 +191,14 @@ def test_merge_geojson_with_municipal_metrics(
     assert "status_virada_municipio" in feat_1["properties"]
     assert "delta_pp_lula" in feat_1["properties"]
     assert "delta_votos_lula" in feat_1["properties"]
+    assert "pct_lula_1t" in feat_1["properties"]
+    assert "pct_lula_2t" in feat_1["properties"]
+    assert "votos_lula_1t" in feat_1["properties"]
+    assert "votos_lula_2t" in feat_1["properties"]
+    assert "votos_adv_1t" in feat_1["properties"]
+    assert "votos_adv_2t" in feat_1["properties"]
+    assert "delta_margem" in feat_1["properties"]
+    assert "vencedor_2t" in feat_1["properties"]
 
     # Segunda feature não deve ter os atributos
     feat_2 = features[1]
@@ -250,3 +262,50 @@ def test_export_wasm_partitions(populated_consolidator: DuckDbConsolidator, tmp_
         df = pl.read_parquet(path)
         assert len(df) > 0
         assert "votos_lula_1t" in df.columns
+
+
+def test_export_cartographic_payloads(
+    populated_consolidator: DuckDbConsolidator, tmp_path: Path
+) -> None:
+    """Verifica a exportação de artefatos JSON dos pilares cartográficos (GEO-PILAR 3 e 4).
+
+    Valida states_deep_dive_southeast.json, lula_advance_bubble_map.json e
+    flavio_performance_bubble_map.json.
+
+    Satisfaz: REQ-EXPO-01, REQ-EXPO-02, REQ-EXPO-04.
+    """
+    export_dir = tmp_path / "carto_export"
+    files = export_cartographic_payloads(populated_consolidator, export_dir, ano=2026)
+
+    assert "states_deep_dive_southeast" in files
+    assert "lula_advance_bubble_map" in files
+    assert "flavio_performance_bubble_map" in files
+
+    # 1. Validar states_deep_dive_southeast.json
+    southeast_path = files["states_deep_dive_southeast"]
+    assert southeast_path.exists()
+    with southeast_path.open("r", encoding="utf-8") as f:
+        southeast_data = json.load(f)
+    southeast_payload = SoutheastDeepDivePayload.model_validate(southeast_data)
+    assert southeast_payload.ano_eleicao == 2026
+    assert len(southeast_payload.estados) > 0
+
+    # 2. Validar lula_advance_bubble_map.json
+    lula_path = files["lula_advance_bubble_map"]
+    assert lula_path.exists()
+    with lula_path.open("r", encoding="utf-8") as f:
+        lula_data = json.load(f)
+    lula_payload = LulaAdvanceBubbleMapPayload.model_validate(lula_data)
+    assert lula_payload.ano_eleicao == 2026
+    assert len(lula_payload.destaques_capitais) > 0
+    assert len(lula_payload.municipios) > 0
+
+    # 3. Validar flavio_performance_bubble_map.json
+    flavio_path = files["flavio_performance_bubble_map"]
+    assert flavio_path.exists()
+    with flavio_path.open("r", encoding="utf-8") as f:
+        flavio_data = json.load(f)
+    flavio_payload = FlavioPerformanceBubbleMapPayload.model_validate(flavio_data)
+    assert flavio_payload.ano_eleicao == 2026
+    assert len(flavio_payload.destaques_capitais) > 0
+    assert len(flavio_payload.municipios) > 0
