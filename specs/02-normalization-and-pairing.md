@@ -9,12 +9,12 @@
 
 Os arquivos de Boletim de Urna contêm todos os cargos em disputa (Presidente, Governador, Senador, Deputados). Para evitar sobrecarga de memória:
 1. **Filtragem Antecipada (Pushdown):**
-   - Filtrar imediatamente no plano de consulta: `CD_CARGO = 1`.
+   - Filtrar imediatamente no plano de consulta: `CD_CARGO = 1` (Presidente da República nas Eleições de 2026).
 2. **Pivotagem Colunar por Seção:**
    Cada linha do CSV original representa uma contagem de votos para um `NR_VOTAVEL`. A etapa de normalização condensa todas as linhas de uma seção em uma única tupla analítica por turno:
-   - `votos_lula`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 13`.
-   - `votos_adv`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 22` (Bolsonaro).
-   - `votos_outros`: soma de `QT_VOTOS` onde `NR_VOTAVEL NOT IN (13, 22, 95, 96)` (aplicável ao 1T).
+   - `votos_lula`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 13` (Luiz Inácio Lula da Silva).
+   - `votos_adv`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 22` (Flávio Bolsonaro).
+   - `votos_outros`: soma de `QT_VOTOS` de todos os terceiros candidatos habilitados no 1T (`NR_VOTAVEL NOT IN (13, 22, 95, 96)`).
    - `votos_brancos`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 95`.
    - `votos_nulos`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 96`.
    - `aptos`: valor máximo de `QT_APTOS` registrado para o cargo Presidente.

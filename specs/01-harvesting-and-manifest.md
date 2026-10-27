@@ -15,9 +15,9 @@ O módulo `harvester` deve implementar o protocolo `BuArtifactProvider` suportan
 2. **Origem Remota (`RemoteTseBuProvider`):** Obtenção assíncrona automatizada com cliente `httpx.AsyncClient` com streaming direto para disco temporário ou leitura do índice central.
 
 ### 1.1. Nomenclatura e Parâmetros
-- `turno`: `1` ou `2`.
+- `turno`: `1` ou `2` (2º turno realizado em 25/10/2026).
 - `uf`: Sigla da UF em minúsculas ou maiúsculas (`ac`, `al`, ..., `sp`, ..., `zz`). O escopo nacional compreende as 27 UFs domésticas mais `zz` (exterior).
-- `ano`: Padrão `2022` (extensível a outros pleitos gerais com segundo turno presidencial).
+- `ano`: Padrão mandatório `2026` (Eleições Presidenciais de 2026). É vedado o uso de outros anos.
 
 ### 1.2. Restrições Críticas de Performance e Memória
 1. Os arquivos `.zip` de estados de grande eleitorado (SP, MG, RJ, BA) variam entre `500 MB` e `3 GB` compactados e podem atingir mais de `15 GB` descompactados.
@@ -36,10 +36,10 @@ O módulo `harvester` deve implementar o protocolo `BuArtifactProvider` suportan
 Ao término da coleta de cada estado/turno, registrar em `data/raw/manifest_{ano}_{turno}_{uf}.json`:
 ```json
 {
-  "ano_eleicao": 2022,
+  "ano_eleicao": 2026,
   "turno": 1,
   "uf": "AC",
-  "source_file": "bweb_1t_AC_051020221321.zip",
+  "source_file": "bweb_1t_AC_051020261321.zip",
   "sha512": "a1b2c3d4...",
   "file_size_bytes": 14205830,
   "downloaded_at": "2026-10-26T12:00:00Z",
