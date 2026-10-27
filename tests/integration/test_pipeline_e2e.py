@@ -16,6 +16,19 @@ from typer.testing import CliRunner
 
 from tests.fixtures.builder import build_synthetic_bu_dataset
 from virada_eleitoral.cli import app
+from virada_eleitoral.contracts.models import (
+    EcologicalRegressionScatterPayload,
+    FlavioPerformanceBubbleMapPayload,
+    LulaAdvanceBubbleMapPayload,
+    NationalSummaryPayload,
+    SankeyVoteFlowsPayload,
+    SoutheastDeepDivePayload,
+    StateSummaryItem,
+    SwingCityPayload,
+    TransitionDistributionPayload,
+    TurnoverClassification,
+    WaterfallTurnoverPayload,
+)
 
 if TYPE_CHECKING:
     import pytest_mock
@@ -49,7 +62,7 @@ def test_cli_harvest_generates_manifest(tmp_path: Path) -> None:
         [
             "harvest",
             "--ano",
-            "2022",
+            "2026",
             "--input-dir",
             str(raw_dir),
             "--manifest-dir",
@@ -78,7 +91,7 @@ def test_cli_run_all_pipeline_e2e(tmp_path: Path) -> None:
         [
             "run-all",
             "--ano",
-            "2022",
+            "2026",
             "--uf",
             "ALL",
             "--raw-dir",
@@ -103,7 +116,7 @@ def test_cli_run_all_pipeline_e2e(tmp_path: Path) -> None:
     assert db_path.exists()
     assert db_path.stat().st_size > 0
 
-    # 3. Conferência dos arquivos JSON estáticos
+    # 3. Conferência e validação de schema dos arquivos JSON estáticos base
     assert (export_dir / "summary_national.json").exists()
     assert (export_dir / "summary_uf.json").exists()
     assert (export_dir / "swing_cities.json").exists()
@@ -113,14 +126,64 @@ def test_cli_run_all_pipeline_e2e(tmp_path: Path) -> None:
     with (export_dir / "metadata.json").open("r", encoding="utf-8") as f:
         meta = json.load(f)
     assert meta["pipeline"] == "virada_eleitoral"
-    assert meta["ano_eleicao"] == 2022
+    assert meta["ano_eleicao"] == 2026
     assert meta["total_secoes_analisadas"] == 10
 
-    # 4. Conferência das partições DuckDB-Wasm
+    with (export_dir / "summary_national.json").open("r", encoding="utf-8") as f:
+        nat_payload = NationalSummaryPayload.model_validate(json.load(f))
+        assert nat_payload.ano_eleicao == 2026
+
+    with (export_dir / "summary_uf.json").open("r", encoding="utf-8") as f:
+        for uf_item in json.load(f):
+            StateSummaryItem.model_validate(uf_item)
+
+    with (export_dir / "swing_cities.json").open("r", encoding="utf-8") as f:
+        swing_items = [SwingCityPayload.model_validate(c) for c in json.load(f)]
+        assert len(swing_items) >= 2
+        # Verificar presença de viradas municipais no 2T
+        assert any(
+            c.status_virada_municipio == TurnoverClassification.VIRADA_LULA for c in swing_items
+        )
+        assert any(
+            c.status_virada_municipio == TurnoverClassification.VIRADA_ADVERSARIO
+            for c in swing_items
+        )
+
+    # 4. Conferência e validação de schema dos 4 Pilares Gráficos
+    assert (export_dir / "waterfall_turnover_balance.json").exists()
+    with (export_dir / "waterfall_turnover_balance.json").open("r", encoding="utf-8") as f:
+        WaterfallTurnoverPayload.model_validate(json.load(f))
+
+    assert (export_dir / "sankey_vote_flows.json").exists()
+    with (export_dir / "sankey_vote_flows.json").open("r", encoding="utf-8") as f:
+        SankeyVoteFlowsPayload.model_validate(json.load(f))
+
+    assert (export_dir / "transition_distribution_groups.json").exists()
+    with (export_dir / "transition_distribution_groups.json").open("r", encoding="utf-8") as f:
+        TransitionDistributionPayload.model_validate(json.load(f))
+
+    assert (export_dir / "ecological_regression_scatter.json").exists()
+    with (export_dir / "ecological_regression_scatter.json").open("r", encoding="utf-8") as f:
+        EcologicalRegressionScatterPayload.model_validate(json.load(f))
+
+    # 5. Conferência e validação de schema dos Pilares Cartográficos
+    assert (export_dir / "states_deep_dive_southeast.json").exists()
+    with (export_dir / "states_deep_dive_southeast.json").open("r", encoding="utf-8") as f:
+        SoutheastDeepDivePayload.model_validate(json.load(f))
+
+    assert (export_dir / "lula_advance_bubble_map.json").exists()
+    with (export_dir / "lula_advance_bubble_map.json").open("r", encoding="utf-8") as f:
+        LulaAdvanceBubbleMapPayload.model_validate(json.load(f))
+
+    assert (export_dir / "flavio_performance_bubble_map.json").exists()
+    with (export_dir / "flavio_performance_bubble_map.json").open("r", encoding="utf-8") as f:
+        FlavioPerformanceBubbleMapPayload.model_validate(json.load(f))
+
+    # 6. Conferência das partições DuckDB-Wasm
     wasm_files = list((export_dir / "wasm").glob("sections_*.parquet"))
     assert len(wasm_files) > 0
 
-    # 5. Execução do comando verify isolado
+    # 7. Execução do comando verify isolado
     verify_result = runner.invoke(
         app,
         [
