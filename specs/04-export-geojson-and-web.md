@@ -22,7 +22,8 @@ data/export/
 ├── transition_distribution_groups.json # PILAR 3: Barras empilhadas 100% de destino por grupo de origem
 ├── ecological_regression_scatter.json # PILAR 4: Dispersão seção a seção e reta de regressão ponderada
 ├── states_deep_dive_southeast.json   # GEO-PILAR 3: Painel comparativo de avanço em SP, RJ e MG
-├── lula_advance_bubble_map.json      # GEO-PILAR 4: Bolhas proporcionais ao eleitorado com delta pp de Lula
+├── lula_advance_bubble_map.json      # GEO-PILAR 4A: Bolhas de avanço de Lula (escala sequencial 0 a +10 pp)
+├── flavio_performance_bubble_map.json # GEO-PILAR 4B: Bolhas de Flávio (escala divergente -3 pp a +6 pp)
 └── geo/
     ├── ufs_virada.topojson           # GEO-PILAR 1: Malha estadual com vencedor e percentuais 2T
     └── municipios_virada.topojson     # GEO-PILAR 2: Malha de 5.570 municípios com status de virada e percentuais
@@ -277,6 +278,44 @@ Contém os centróides, tamanho de eleitorado apto e ganho em pontos percentuais
 }
 ```
 
+### 1.9. Contrato `flavio_performance_bubble_map.json` (GEO-PILAR 4B: Bolhas de Flávio com Escala Divergente)
+Contém os centróides, tamanho de aptos e variação em pontos percentuais dos votos válidos para Flávio Bolsonaro, utilizando escala divergente (recuo em vermelho vs avanço em azul):
+```json
+{
+  "ano_eleicao": 2026,
+  "titulo": "Desempenho de Flávio entre o 1º e o 2º Turno (2026) ponderado pelo eleitorado",
+  "metrica_escala": "Variação em pontos percentuais dos votos válidos (1T para 2T)",
+  "escala_cores": {
+    "tipo": "divergente",
+    "min_pp": -3.0,
+    "centro_pp": 0.0,
+    "max_pp": 6.0,
+    "cor_recuo": "#B22222",
+    "cor_neutra": "#FFFFFF",
+    "cor_avanco": "#002060",
+    "rotulo_recuo": "Flávio recuou (-3 pp)",
+    "rotulo_avanco": "Flávio avançou (>= +6 pp)"
+  },
+  "destaques_capitais": [
+    {"cidade": "Curitiba", "sg_uf": "PR", "delta_pp": 4.8, "lat": -25.4284, "lon": -49.2733, "aptos": 1400000},
+    {"cidade": "Brasília", "sg_uf": "DF", "delta_pp": 3.0, "lat": -15.7975, "lon": -47.8919, "aptos": 2200000},
+    {"cidade": "Belo Horizonte", "sg_uf": "MG", "delta_pp": 2.5, "lat": -19.9167, "lon": -43.9345, "aptos": 2000000},
+    {"cidade": "São Paulo", "sg_uf": "SP", "delta_pp": 2.4, "lat": -23.5505, "lon": -46.6333, "aptos": 9314000},
+    {"cidade": "Porto Alegre", "sg_uf": "RS", "delta_pp": 2.3, "lat": -30.0346, "lon": -51.2177, "aptos": 1100000},
+    {"cidade": "Manaus", "sg_uf": "AM", "delta_pp": 1.6, "lat": -3.1190, "lon": -60.0217, "aptos": 1400000},
+    {"cidade": "Belém", "sg_uf": "PA", "delta_pp": 1.3, "lat": -1.4558, "lon": -48.4902, "aptos": 1050000},
+    {"cidade": "Rio de Janeiro", "sg_uf": "RJ", "delta_pp": 0.6, "lat": -22.9068, "lon": -43.1729, "aptos": 5000000},
+    {"cidade": "Fortaleza", "sg_uf": "CE", "delta_pp": 0.6, "lat": -3.7172, "lon": -38.5433, "aptos": 1800000},
+    {"cidade": "Recife", "sg_uf": "PE", "delta_pp": 0.4, "lat": -8.0476, "lon": -34.8770, "aptos": 1200000},
+    {"cidade": "Salvador", "sg_uf": "BA", "delta_pp": -0.3, "lat": -12.9777, "lon": -38.5016, "aptos": 1980000, "status": "RECUO"}
+  ],
+  "municipios": [
+    {"cd_ibge": 4106902, "nm": "Curitiba", "uf": "PR", "aptos": 1400000, "delta_pp": 4.8, "lat": -25.4284, "lon": -49.2733},
+    {"cd_ibge": 2927408, "nm": "Salvador", "uf": "BA", "aptos": 1980000, "delta_pp": -0.3, "lat": -12.9777, "lon": -38.5016}
+  ]
+}
+```
+
 ---
 
 ## 2. Fusão Cartográfica com Malha IBGE e os 4 Pilares Geo-Analíticos (`REQ-EXPO-02`, `REQ-EXPO-04`)
@@ -303,11 +342,12 @@ A entrega mínima cartográfica integra 4 pilares espaciais multiníveis:
    - Permite ao visitante alternar ou visualizar lado a lado o mapa municipal de 1T vs 2T nos três maiores estados do país.
    - Gráficos integrados de barras comparativas alimentados por `states_deep_dive_southeast.json` demonstrando que o crescimento de Lula superou em mais que o dobro o avanço de Flávio na região mais populosa do Brasil.
 
-4. **GEO-PILAR 4: Mapa de Bolhas Proporcionais de Avanço de Lula Ponderado pelo Eleitorado:**
-   - Renderização sobre a malha de centróides municipais alimentada por `lula_advance_bubble_map.json`.
-   - Diâmetro da bolha calibrado pela raiz quadrada de `total_aptos` ($\text{raio} \propto \sqrt{\text{aptos}}$).
-   - Gradiente de cor contínuo de branco/rosado (0 pp / estável) a bordô escuro ($\ge +10\text{ pp}$ / migração intensa).
-   - Callouts interativos para as 11 maiores capitais com badges dos pontos percentuais ganhos entre turnos.
+4. **GEO-PILAR 4: Díptico Cartográfico de Bolhas Proporcionais Ponderadas (Lula vs. Flávio):**
+   - Renderização espelhada lado a lado ou com seletor de candidato no frontend:
+     * **4A (Lula):** Alimentado por `lula_advance_bubble_map.json` com escala contínua de 0 a $\ge +10\text{ pp}$ de avanço.
+     * **4B (Flávio):** Alimentado por `flavio_performance_bubble_map.json` com escala divergente de $-3\text{ pp}$ (recuo) a $\ge +6\text{ pp}$ (avanço).
+   - Diâmetro das bolhas calibrado pela raiz quadrada de `total_aptos` ($\text{raio} \propto \sqrt{\text{aptos}}$).
+   - Painel comparativo de callouts para metrópoles demonstrando que Lula avançou em média $3\times$ a $12\times$ mais rápido que Flávio nas principais capitais.
 
 5. **Suporte a Consultas Locais via DuckDB-Wasm:**
    - Exportação de partições Parquet por UF em `data/export/wasm/sections_{uf}.parquet` permitindo inspeção interativa de qualquer uma das ~470.000 seções no navegador sem backend dinâmico.

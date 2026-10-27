@@ -201,10 +201,10 @@ WHERE sg_uf IN ('SP', 'MG', 'RJ')
 ORDER BY sg_uf;
 ```
 
-### 5.5. `lula_advance_bubble_metrics` (Métricas para Mapa de Bolhas Proporcionais)
-Estrutura para cada um dos 5.570 municípios o tamanho do eleitorado e o avanço em pontos percentuais para visualização cartográfica proporcional:
+### 5.5. `candidate_advance_bubble_metrics` (Métricas para o Díptico de Bolhas Proporcionais)
+Estrutura para cada um dos 5.570 municípios os dados para alimentar o par espelhado de mapas de bolhas ponderadas pelo eleitorado (Lula e Flávio Bolsonaro):
 ```sql
-CREATE OR REPLACE VIEW lula_advance_bubble_metrics AS
+CREATE OR REPLACE VIEW candidate_advance_bubble_metrics AS
 SELECT
     m.ano_eleicao,
     m.sg_uf,
@@ -218,17 +218,37 @@ SELECT
     m.pct_lula_1t,
     m.pct_lula_2t,
     m.delta_pp_lula,
+    m.votos_adv_1t AS votos_flavio_1t,
+    m.votos_adv_2t AS votos_flavio_2t,
+    (m.votos_adv_2t - m.votos_adv_1t) AS delta_votos_flavio,
+    ROUND(SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0), 4) AS pct_flavio_1t,
+    ROUND(SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0), 4) AS pct_flavio_2t,
+    ROUND((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+          (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0)), 4) AS delta_pp_flavio,
+    ROUND(m.delta_pp_lula - 
+          ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+           (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))), 4) AS saldo_delta_pp_lula_flavio,
     CASE
         WHEN m.delta_pp_lula >= 10.0 THEN 'AVANCO_MUITO_ALTO'
         WHEN m.delta_pp_lula >= 7.5 THEN 'AVANCO_ALTO'
         WHEN m.delta_pp_lula >= 5.0 THEN 'AVANCO_MEDIO'
         WHEN m.delta_pp_lula >= 2.5 THEN 'AVANCO_MODERADO'
         ELSE 'ESTAVEL'
-    END AS categoria_avanco
+    END AS categoria_avanco_lula,
+    CASE
+        WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+              (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) < 0.0 THEN 'FLAVIO_RECUOU'
+        WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+              (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) >= 4.0 THEN 'FLAVIO_AVANCO_FORTE'
+        WHEN ((SUM(p.votos_adv_2t) * 100.0 / NULLIF(SUM(p.votos_validos_2t), 0)) -
+              (SUM(p.votos_adv_1t) * 100.0 / NULLIF(SUM(p.votos_validos_1t), 0))) >= 2.0 THEN 'FLAVIO_AVANCO_MEDIO'
+        ELSE 'FLAVIO_ESTAVEL'
+    END AS categoria_desempenho_flavio
 FROM agg_municipio m
 JOIN pair_sections p
   ON m.sg_uf = p.sg_uf AND m.cd_municipio = p.cd_municipio
 GROUP BY m.ano_eleicao, m.sg_uf, m.cd_municipio, m.cd_municipio_ibge, m.nm_municipio,
-         m.votos_lula_1t, m.votos_lula_2t, m.delta_votos_lula, m.pct_lula_1t, m.pct_lula_2t, m.delta_pp_lula
+         m.votos_lula_1t, m.votos_lula_2t, m.delta_votos_lula, m.pct_lula_1t, m.pct_lula_2t, m.delta_pp_lula,
+         m.votos_adv_1t, m.votos_adv_2t
 ORDER BY total_aptos DESC;
 ```
