@@ -56,6 +56,19 @@ Funcionalidade: Pareamento e classificação de viradas eleitorais entre turnos 
     Quando for gerado o payload sankey_vote_flows.json
     Então cada grupo de origem do 1T deve ter 100% de seus eleitores distribuídos entre os destinos do 2T
     E o somatório dos fluxos para o destino Lula deve ser igual aos novos votos de Lula no 2T
+
+  Cenário: Fidelidade do Card de Cidade Pêndulo no Mapa Municipal (Exemplo Nanuque/MG)
+    Dado o processamento das seções de um município com virada formal
+    Quando for consultada a cidade "Nanuque" em Minas Gerais (IBGE 3144300)
+    Então status_virada_municipio deve ser "VIRADA_LULA"
+    E no 1T Flávio Bolsonaro deve possuir 48,54% contra 46,87% de Lula
+    E no 2T Lula deve possuir 51,33% (vencedor eleito) contra 48,67% de Flávio Bolsonaro
+
+  Cenário: Coerência do Mapa de Bolhas Proporcionais de Avanço de Lula
+    Dado o cálculo da view lula_advance_bubble_metrics
+    Quando for gerado o arquivo lula_advance_bubble_map.json
+    Então todas as capitais destacadas (como São Paulo +8,9 pp, Belo Horizonte +7,8 pp, Rio de Janeiro +7,6 pp) devem possuir coordenadas válidas
+    E o campo total_aptos deve ser estritamente maior que zero para o dimensionamento do raio da bolha
 ```
 
 ---
