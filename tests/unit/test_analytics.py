@@ -22,6 +22,8 @@ from virada_eleitoral.analytics.metrics import (
     compute_regression_trendline,
     estimate_ecological_transition_matrix,
     validate_dataframe_invariants,
+    validate_transition_matrix_invariants,
+    validate_turnover_waterfall_invariants,
 )
 from virada_eleitoral.analytics.storage import (
     list_processed_partitions,
@@ -316,3 +318,37 @@ def test_candidate_advance_bubble_metrics_view(golden_paired_df: pl.DataFrame) -
     ).fetchall()
     assert len(rows) > 0
     consolidator.close()
+
+
+def test_analytics_metrics_edge_cases() -> None:
+    """Verifica casos de borda e validações de invariantes nos métodos de métricas."""
+    # 1. Absorção com votos de terceiros zerados
+    assert calculate_absorption_efficiency(100, 0) is None
+    assert calculate_absorption_efficiency(100, -10) is None
+
+    # 2. Invariantes de dataframe vazio
+    empty_df = pl.DataFrame()
+    validate_dataframe_invariants(empty_df)
+
+    # 3. Regressão WLS com menos de 2 seções (fallback)
+    beta, alpha, r2 = compute_regression_trendline(empty_df)
+    assert beta == 0.8
+    assert alpha == 3.65
+    assert r2 == 0.44
+
+    # 4. Invariantes do Waterfall (sucesso e falha)
+    waterfall = calculate_waterfall_turnover_balance(ano=2026)
+    validate_turnover_waterfall_invariants(waterfall)
+
+    invalid_waterfall = waterfall.model_copy(update={"diferenca_2t": 999.0})
+    with pytest.raises(MathematicalInvariantViolationError, match="invariante do Waterfall"):
+        validate_turnover_waterfall_invariants(invalid_waterfall)
+
+    # 5. Invariantes da Matriz de Transição (sucesso e falha)
+    matrix = estimate_ecological_transition_matrix(ano=2026)
+    validate_transition_matrix_invariants(matrix)
+
+    invalid_group = matrix.grupos[0].model_copy(update={"distribuicao_percentual": {"lula": 10.0}})
+    invalid_matrix = matrix.model_copy(update={"grupos": [invalid_group]})
+    with pytest.raises(MathematicalInvariantViolationError, match="invariante de transição"):
+        validate_transition_matrix_invariants(invalid_matrix)
