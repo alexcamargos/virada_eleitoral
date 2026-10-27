@@ -316,3 +316,27 @@ def test_unpaired_sections_audit_generation(tmp_path: Path) -> None:
     assert row_106["turno_presente"] == 2
     assert row_106["motivo_detectado"] == "URNA_CONTINGENCIA_NAO_PAREADA"
     assert row_106["total_votos_apurados"] == 115  # 60 + 50 + 3 + 2
+
+
+def test_pairing_propagates_subcandidate_columns(tmp_path: Path) -> None:
+    """Garante que as colunas de subcandidatos são propagadas no pareamento 1T x 2T."""
+    path_1t, path_2t = build_synthetic_bu_dataset(tmp_path)
+
+    df_1t = pivot_presidential_bu(path_1t, ano=2026, turno=1)
+    df_2t = pivot_presidential_bu(path_2t, ano=2026, turno=2)
+
+    paired_df, _ = pair_turnover_sections(df_1t, df_2t, ano=2026)
+
+    # Verificar existência das colunas
+    assert "votos_cury_1t" in paired_df.columns
+    assert "votos_caiado_1t" in paired_df.columns
+    assert "votos_renan_zema_1t" in paired_df.columns
+    assert "votos_outros_esquerda_1t" in paired_df.columns
+
+    # Seção 101 (FX-01): Cury=15, Caiado=10, Renan_Zema=5
+    r101 = paired_df.filter(pl.col("nr_secao") == 101).row(0, named=True)
+    assert r101["votos_cury_1t"] == 15
+    assert r101["votos_caiado_1t"] == 10
+    assert r101["votos_renan_zema_1t"] == 5
+    assert r101["votos_outros_esquerda_1t"] == 0
+

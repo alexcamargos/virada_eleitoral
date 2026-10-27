@@ -15,14 +15,14 @@ from virada_eleitoral.resources import get_tse_to_ibge_dict
 def pair_turnover_sections(
     df_1t: pl.DataFrame,
     df_2t: pl.DataFrame,
-    ano: int = 2022,
+    ano: int = 2026,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Executa o pareamento determinístico entre turnos e auditoria de seções não-pareadas.
 
     Args:
         df_1t: DataFrame Polars de seções pivotadas do 1º turno.
         df_2t: DataFrame Polars de seções pivotadas do 2º turno.
-        ano: Ano da eleição auditada.
+        ano: Ano da eleição auditada (padrão 2026).
 
     Returns:
         tuple[pl.DataFrame, pl.DataFrame]: Tupla contendo:
@@ -30,20 +30,41 @@ def pair_turnover_sections(
             - unpaired_audit_df: DataFrame com auditoria detalhada de seções agregadas ou ausentes.
     """
     # Renomear colunas de 1T e 2T para evitar colisões no join
-    t1 = df_1t.rename(
-        {
-            "aptos": "aptos_1t",
-            "comparecimento": "comparecimento_1t",
-            "abstencao": "abstencao_1t",
-            "votos_validos": "votos_validos_1t",
-            "votos_lula": "votos_lula_1t",
-            "votos_adv": "votos_adv_1t",
-            "votos_outros": "votos_outros_1t",
-            "votos_brancos": "votos_brancos_1t",
-            "votos_nulos": "votos_nulos_1t",
-        }
-    ).drop(["ano_eleicao", "turno"])
+    rename_1t = {
+        "aptos": "aptos_1t",
+        "comparecimento": "comparecimento_1t",
+        "abstencao": "abstencao_1t",
+        "votos_validos": "votos_validos_1t",
+        "votos_lula": "votos_lula_1t",
+        "votos_adv": "votos_adv_1t",
+        "votos_outros": "votos_outros_1t",
+        "votos_brancos": "votos_brancos_1t",
+        "votos_nulos": "votos_nulos_1t",
+    }
+    if "votos_cury" in df_1t.columns:
+        rename_1t["votos_cury"] = "votos_cury_1t"
+    if "votos_caiado" in df_1t.columns:
+        rename_1t["votos_caiado"] = "votos_caiado_1t"
+    if "votos_renan_zema" in df_1t.columns:
+        rename_1t["votos_renan_zema"] = "votos_renan_zema_1t"
+    if "votos_outros_esquerda" in df_1t.columns:
+        rename_1t["votos_outros_esquerda"] = "votos_outros_esquerda_1t"
 
+    t1 = df_1t.rename(rename_1t).drop(["ano_eleicao", "turno"])
+
+    cols_to_drop_2t = [
+        c
+        for c in [
+            "ano_eleicao",
+            "turno",
+            "votos_outros",
+            "votos_cury",
+            "votos_caiado",
+            "votos_renan_zema",
+            "votos_outros_esquerda",
+        ]
+        if c in df_2t.columns
+    ]
     t2 = df_2t.rename(
         {
             "aptos": "aptos_2t",
@@ -55,7 +76,7 @@ def pair_turnover_sections(
             "votos_brancos": "votos_brancos_2t",
             "votos_nulos": "votos_nulos_2t",
         }
-    ).drop(["ano_eleicao", "turno", "votos_outros"])
+    ).drop(cols_to_drop_2t)
 
     # Chave primária composta de junção
     join_keys = ["sg_uf", "cd_municipio", "nr_zona", "nr_secao"]
@@ -82,6 +103,26 @@ def pair_turnover_sections(
         pl.col("votos_lula_1t").fill_null(0).cast(pl.Int32),
         pl.col("votos_adv_1t").fill_null(0).cast(pl.Int32),
         pl.col("votos_outros_1t").fill_null(0).cast(pl.Int32),
+        (
+            pl.col("votos_cury_1t").fill_null(0).cast(pl.Int32)
+            if "votos_cury_1t" in joined.columns
+            else pl.lit(0, dtype=pl.Int32).alias("votos_cury_1t")
+        ),
+        (
+            pl.col("votos_caiado_1t").fill_null(0).cast(pl.Int32)
+            if "votos_caiado_1t" in joined.columns
+            else pl.lit(0, dtype=pl.Int32).alias("votos_caiado_1t")
+        ),
+        (
+            pl.col("votos_renan_zema_1t").fill_null(0).cast(pl.Int32)
+            if "votos_renan_zema_1t" in joined.columns
+            else pl.lit(0, dtype=pl.Int32).alias("votos_renan_zema_1t")
+        ),
+        (
+            pl.col("votos_outros_esquerda_1t").fill_null(0).cast(pl.Int32)
+            if "votos_outros_esquerda_1t" in joined.columns
+            else pl.lit(0, dtype=pl.Int32).alias("votos_outros_esquerda_1t")
+        ),
         pl.col("votos_brancos_1t").fill_null(0).cast(pl.Int32),
         pl.col("votos_nulos_1t").fill_null(0).cast(pl.Int32),
         pl.col("aptos_2t").fill_null(0).cast(pl.Int32),
