@@ -507,3 +507,49 @@ def build_ecological_regression_scatter_payload(
         ),
         pontos_amostra=pontos,
     )
+
+
+def validate_turnover_waterfall_invariants(payload: WaterfallTurnoverPayload) -> None:
+    """Valida a conservação estrita de saldo líquido na cascata da virada (Waterfall).
+
+    Garante que a variação de saldo entre o 2T e o 1T é estritamente igual à soma
+    dos saldos líquidos de todos os degraus de absorção de votos.
+
+    Satisfaz: REQ-ANAL-02, REQ-QA-01.
+
+    Args:
+        payload: Modelo Pydantic da cascata de saldo líquido.
+
+    Raises:
+        MathematicalInvariantViolationError: Caso a conservação seja violada.
+    """
+    delta_esperado = payload.diferenca_2t - payload.diferenca_1t
+    soma_degraus = sum(step.saldo_liquido for step in payload.degraus)
+    if abs(delta_esperado - soma_degraus) > 1e-4:
+        raise MathematicalInvariantViolationError(
+            f"Violação da invariante do Waterfall: delta esperado {delta_esperado} "
+            f"!= soma dos degraus {soma_degraus}."
+        )
+
+
+def validate_transition_matrix_invariants(payload: TransitionDistributionPayload) -> None:
+    """Valida a conservação estocástica das linhas da matriz de transição de votos.
+
+    Garante que para cada grupo de origem a soma dos percentuais distribuídos
+    totalize 100%.
+
+    Satisfaz: REQ-ANAL-02, REQ-QA-01.
+
+    Args:
+        payload: Modelo Pydantic dos grupos de transição e barras 100%.
+
+    Raises:
+        MathematicalInvariantViolationError: Caso qualquer grupo não totalize 100%.
+    """
+    for grupo in payload.grupos:
+        soma_pcts = sum(grupo.distribuicao_percentual.values())
+        if abs(soma_pcts - 100.0) > 0.05:
+            raise MathematicalInvariantViolationError(
+                f"Violação da invariante de transição no grupo '{grupo.nome}': "
+                f"soma das parcelas {soma_pcts:.2f}% != 100.0%."
+            )
