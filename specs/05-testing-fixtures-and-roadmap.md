@@ -65,10 +65,17 @@ Funcionalidade: Pareamento e classificação de viradas eleitorais entre turnos 
     E no 2T Lula deve possuir 51,33% (vencedor eleito) contra 48,67% de Flávio Bolsonaro
 
   Cenário: Coerência do Mapa de Bolhas Proporcionais de Avanço de Lula
-    Dado o cálculo da view lula_advance_bubble_metrics
+    Dado o cálculo da view candidate_advance_bubble_metrics
     Quando for gerado o arquivo lula_advance_bubble_map.json
     Então todas as capitais destacadas (como São Paulo +8,9 pp, Belo Horizonte +7,8 pp, Rio de Janeiro +7,6 pp) devem possuir coordenadas válidas
     E o campo total_aptos deve ser estritamente maior que zero para o dimensionamento do raio da bolha
+
+  Cenário: Validação do Mapa de Desempenho de Flávio e Tratamento de Variação Negativa
+    Dado o cálculo da view candidate_advance_bubble_metrics
+    Quando for gerado o arquivo flavio_performance_bubble_map.json
+    Então a escala divergente deve suportar valores negativos de delta_pp
+    E na capital Salvador (BA) delta_pp deve ser -0,3 com categoria_desempenho igual a "FLAVIO_RECUOU"
+    E em Curitiba (PR) delta_pp deve ser +4,8 com categoria_desempenho igual a "FLAVIO_AVANCO_FORTE"
 ```
 
 ---
