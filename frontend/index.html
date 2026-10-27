@@ -101,7 +101,7 @@
       border-bottom: none;
       border-radius: 6px 6px 0 0;
       color: #CBD5E1;
-      padding: 8px 16px;
+      padding: 9px 18px;
       font-weight: 600;
       font-size: 13px;
       white-space: nowrap;
@@ -304,11 +304,53 @@
       font-weight: 600;
       color: #F8FAFC;
     }
-    .conta-footer-note {
-      font-size: 12px;
-      color: #64748B;
-      margin-top: 12px;
-      line-height: 1.5;
+
+    /* Guias de Leitura Editoriais e Decifração Analítica */
+    .guidance-box {
+      background-color: #15181E;
+      border: 1px solid #282D37;
+      border-left: 3px solid #38BDF8;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: #CBD5E1;
+      line-height: 1.55;
+    }
+    .guidance-box strong {
+      color: #F8FAFC;
+    }
+    .guidance-box .guidance-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #38BDF8;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Banners de Condução e Transição de Jornada (Rodapés das Abas) */
+    .step-transition-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background-color: #15181E;
+      border: 1px dashed #282D37;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-top: 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .step-transition-banner:hover {
+      background-color: #181B20;
+      border-color: #38BDF8;
+      transform: translateY(-1px);
     }
 
     /* Sankey link transitions */
@@ -407,7 +449,7 @@
         </span>
       </div>
       <p class="tse-summary-stats">
-        Auditoria exhaustiva e determinística pareando as urnas do 1º Turno e 2º Turno em todas as 27 Unidades Federativas.
+        Auditoria exaustiva e determinística pareando as seções eleitorais do 1º Turno e 2º Turno em todas as 27 Unidades Federativas.
         Total de <strong class="text-white font-mono" id="banner-total-validos">124.250.000</strong> votos válidos contabilizados em <strong class="text-white font-mono" id="banner-total-secoes">471.920</strong> seções eleitorais pareadas.
       </p>
 
@@ -578,32 +620,62 @@
 
       <!-- Gráficos Principais de Resumo Executivo -->
       <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="flex items-center gap-2">
-              <i class="fa-solid fa-chart-column text-sky-400"></i>
-              Comparação Nominal de Votos (1º Turno x 2º Turno)
-            </span>
-            <span class="text-[11px] text-slate-400 font-mono">Consolidado Brasil</span>
+        <div class="hero-card flex flex-col justify-between">
+          <div>
+            <div class="hero-card-header">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-sky-400"></i>
+                Comparação Nominal de Votos (1º Turno x 2º Turno)
+              </span>
+              <span class="text-[11px] text-slate-400 font-mono">Consolidado Brasil</span>
+            </div>
+            <div class="h-72">
+              <canvas id="chart-comparison"></canvas>
+            </div>
           </div>
-          <div class="h-72">
-            <canvas id="chart-comparison"></canvas>
+          <div class="mt-4 pt-3 border-t border-[#282D37] text-[11px] text-slate-400 flex items-center justify-between">
+            <span>Ambos os candidatos expandiram votação, mas Lula reverteu a desvantagem absorvendo contingentes neutros.</span>
+            <span class="hero-pill">TSE 2026</span>
           </div>
         </div>
 
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="flex items-center gap-2">
-              <i class="fa-solid fa-chart-pie text-emerald-400"></i>
-              Classificação Categórica das Urnas Auditadas
-            </span>
-            <span class="text-[11px] text-slate-400 font-mono">Seção a Seção</span>
-          </div>
-          <div class="h-72 flex items-center justify-center">
-            <canvas id="chart-classification"></canvas>
+        <div class="hero-card flex flex-col justify-between">
+          <div>
+            <div class="hero-card-header">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+                Classificação Categórica das Urnas Auditadas
+              </span>
+              <span class="text-[11px] text-slate-400 font-mono">471.920 Seções</span>
+            </div>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="chart-classification"></canvas>
+            </div>
+
+            <!-- Bloco de Condução / Decifração das Urnas -->
+            <div class="guidance-box">
+              <div class="guidance-tag"><i class="fa-solid fa-key text-sky-400"></i> Chave de Interpretação das Urnas</div>
+              Em pleitos polarizados, <strong>a estabilidade de liderança domina o território (93,3% das urnas repetiram o vencedor do 1º turno)</strong>. A virada presidencial de 2026 não dependeu de uma onda generalizada de inversão, mas da assimetria nas <strong>23.410 seções estratégicas</strong> onde Lula reverteu a liderança (quase 3x mais que as 8.120 urnas pró-adversário) somada ao crescimento contínuo de votos válidos mesmo onde permaneceu em segundo lugar.
+            </div>
           </div>
         </div>
       </section>
+
+      <!-- Banner de Transição para a Aba 2 -->
+      <div class="step-transition-banner" onclick="switchTab('pillars')">
+        <div class="flex items-center gap-3">
+          <span class="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <i class="fa-solid fa-sitemap text-base"></i>
+          </span>
+          <div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Próximo Passo na Leitura Analítica</div>
+            <div class="text-sm font-bold text-white">De onde exatamente vieram os votos? Descubra nos 4 Pilares da Virada</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5 hover:underline">
+          Avançar para os 4 Pilares <i class="fa-solid fa-arrow-right"></i>
+        </span>
+      </div>
 
     </div>
 
@@ -614,14 +686,14 @@
       
       <!-- Cabeçalho Explicativo no padrão 'A CONTA' -->
       <div class="conta-container">
-        <div class="conta-section-badge">MEMORIAL METODOLÓGICO</div>
+        <div class="conta-section-badge">MEMORIAL METODOLÓGICO & AUDITORIA DE TRANSIÇÃO</div>
         <div class="conta-main-title">Os 4 Pilares Gráficos da Virada Eleitoral 2026</div>
         <div class="conta-subtitle">
           Decomposição matemática, estatística e contábil comprovando de onde vieram os votos obtidos por Luiz Inácio Lula da Silva no 2º Turno (25/10/2026).
           A virada de <strong>-2,22 milhões no 1ºT</strong> para uma vitória por <strong>+4,43 milhões no 2ºT</strong> foi impulsionada pela absorção maciça de ex-brancos/nulos (+3,23 mi líquidos) e retorno de ausentes (+1,83 mi líquidos).
         </div>
         <div class="conta-instruction">
-          Cada pilar decompõe uma dimensão do fenômeno eleitoral: saldo líquido agregado, fluxos aluviais de migração, distribuição proporcional por grupo e evidência econométrica seção a seção.
+          Cada pilar decompõe uma dimensão do fenômeno eleitoral: saldo líquido agregado (Waterfall), fluxos aluviais de migração (Sankey), distribuição proporcional por grupo (Matriz 100%) e teste econométrico de sensibilidade seção a seção (Regressão Linear Ponderada WLS).
         </div>
       </div>
 
@@ -649,6 +721,12 @@
         <!-- Card da Fórmula (estilo A CONTA) -->
         <div class="conta-formula-card">
           Δ Margem = (-2,22 mi no 1ºT) + (+3,23 mi Brancos/Nulos) + (+1,83 mi Ausentes) + (+1,27 mi Retenção) + (+0,32 mi 3ºs Cand.) = +4,43 mi no 2ºT
+        </div>
+
+        <!-- Bloco de Condução de Leitura do Waterfall -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-calculator text-emerald-400"></i> Como Decifrar o Saldo Líquido</div>
+          Este gráfico decompõe o <strong>saldo diferencial acumulado</strong> (votos que Lula conquistou <em>menos</em> os votos que Flávio conquistou em cada eleitorado). A largada parte do déficit de <strong>-2,22 milhões</strong> no 1ºT. O motor decisivo da vitória foi a atração de <strong>Ex-brancos e nulos (+3,23 mi líquidos)</strong>: Lula captou 3,61 mi contra apenas 0,38 mi de Flávio — uma taxa de conversão quase 10 vezes maior. Em contraste, os eleitores de terceiros candidatos geraram um saldo líquido de apenas +0,32 mi para Lula.
         </div>
 
         <!-- Cards dos Degraus do Waterfall -->
@@ -696,6 +774,12 @@
             <!-- Renderizado dinamicamente via JS -->
           </div>
         </div>
+
+        <!-- Bloco de Condução de Leitura do Sankey -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-water text-indigo-400"></i> Chave de Leitura dos Fluxos Aluviais</div>
+          Para focar estritamente nas correntes que alteraram o resultado, este diagrama <strong>isola a massa volátil de 15,4 milhões de eleitores</strong>, excluindo as repetições fiéis de voto em Lula e Flávio. À esquerda estão as origens do 1º turno; à direita, os destinos no 2º turno. Note que as <strong>perdas de base de Flávio (1,70 mi de eleitores)</strong> migraram majoritariamente para Lula (0,80 mi) ou para o não-voto, enquanto a base de Lula teve retenção quase integral (perdeu apenas 0,60 mi).
+        </div>
       </div>
 
       <!-- PILAR 3 & PILAR 4: MATRIZ 100% E SCATTER COM REGRESSÃO -->
@@ -711,6 +795,12 @@
             <p class="text-xs text-slate-400 mb-4">Para onde foram os eleitores de outros candidatos, brancos/nulos e ausentes.</p>
             <div class="h-72">
               <canvas id="chart-transition-stacked"></canvas>
+            </div>
+
+            <!-- Bloco de Condução de Leitura da Matriz -->
+            <div class="guidance-box">
+              <div class="guidance-tag"><i class="fa-solid fa-chart-column text-purple-400"></i> Taxas Proporcionais de Conversão</div>
+              <strong>60% dos eleitores de branco e nulo</strong> do 1º turno optaram por Lula no 2º turno, enquanto apenas 6% foram para Flávio e 33% continuaram anulando. Entre os <strong>ausentes que retornaram às urnas</strong>, Lula capturou <strong>68%</strong> dos votos válidos, evidenciando que a redução da abstenção operou fortemente em favor da virada governista.
             </div>
           </div>
           <div class="mt-4 pt-3 border-t border-[#282D37] text-[11px] text-slate-400 flex items-center justify-between">
@@ -735,6 +825,12 @@
             <div class="h-72">
               <canvas id="chart-regression-scatter"></canvas>
             </div>
+
+            <!-- Bloco de Condução de Leitura da Regressão -->
+            <div class="guidance-box">
+              <div class="guidance-tag"><i class="fa-solid fa-chart-line text-sky-400"></i> O Teste Econométrico da Hipótese</div>
+              Cada ponto representa uma seção eleitoral auditada. O modelo de regressão ponderada (WLS) confirma empiricamente: o coeficiente angular positivo <strong>&beta; = +0,80 (R² = 0,44)</strong> atesta que, a cada 1 ponto percentual adicional de votos brancos e nulos no 1º turno de uma seção, <strong>Lula cresceu em média +0,8 pp adicionais no 2º turno</strong>. Isso comprova que a absorção desse contingente foi um fenômeno estatisticamente consistente em todo o território nacional.
+            </div>
           </div>
           <div class="mt-4 pt-3 border-t border-[#282D37] text-[11px] text-slate-400 flex items-center justify-between">
             <span>Amostra estratificada de seções eleitorais auditadas demonstrando a sensibilidade linear de captação.</span>
@@ -742,6 +838,22 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- Banner de Transição para a Aba 3 -->
+      <div class="step-transition-banner" onclick="switchTab('states')">
+        <div class="flex items-center gap-3">
+          <span class="p-2.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <i class="fa-solid fa-map text-base"></i>
+          </span>
+          <div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Próximo Passo na Leitura Analítica</div>
+            <div class="text-sm font-bold text-white">Onde a eleição foi decidida? O Paradoxo do Sudeste (SP, MG e RJ)</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5 hover:underline">
+          Ver Comparativo de Estados <i class="fa-solid fa-arrow-right"></i>
+        </span>
       </div>
 
     </div>
@@ -779,6 +891,12 @@
           <div class="h-64">
             <canvas id="chart-southeast-comparison"></canvas>
           </div>
+        </div>
+
+        <!-- Bloco de Condução de Leitura do Sudeste -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-scale-balanced text-amber-400"></i> Decifrando o Paradoxo do Sudeste</div>
+          Embora Flávio Bolsonaro tenha vencido em São Paulo (53,9%) e no Rio de Janeiro (53,1%) no 2º turno, <strong>a taxa de aceleração de Lula foi mais que o dobro</strong> (2,15x em SP e 4,32x no RJ). Ao adicionar <strong>+4,53 milhões de votos nominais</strong> nos três maiores colégios eleitorais combinados (contra +1,97 mi de Flávio), Lula encurtou a desvantagem regional e consolidou a vitória nacional construída no Nordeste.
         </div>
       </section>
 
@@ -885,6 +1003,22 @@
         </div>
       </section>
 
+      <!-- Banner de Transição para a Aba 4 -->
+      <div class="step-transition-banner" onclick="switchTab('cities')">
+        <div class="flex items-center gap-3">
+          <span class="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <i class="fa-solid fa-city text-base"></i>
+          </span>
+          <div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Próximo Passo na Leitura Analítica</div>
+            <div class="text-sm font-bold text-white">Da escala macro para o município: Cidades Pêndulo e o Caso Nanuque/MG</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5 hover:underline">
+          Ver Cidades Pêndulo <i class="fa-solid fa-arrow-right"></i>
+        </span>
+      </div>
+
     </div>
 
     <!-- ========================================== -->
@@ -915,6 +1049,12 @@
         <!-- O Card Eleitoral Comparativo -->
         <div id="canonical-swing-card" class="bg-[#14171C] border border-[#282D37] rounded-xl p-6">
           <!-- Renderizado via JS -->
+        </div>
+
+        <!-- Bloco de Condução de Leitura de Swing Cities -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-location-crosshairs text-amber-400"></i> O Que Define uma Cidade Pêndulo (Swing City)?</div>
+          Municípios onde ocorreu <strong>reversão completa do vencedor</strong> entre o 1º e o 2º turno. O caso canônico de <strong>Nanuque (MG)</strong> ilustra a mecânica da virada: no 1ºT, Flávio liderou com 48,54% contra 46,87% de Lula (+275 votos pró-Flávio). No 2ºT, Lula virou para 51,33% contra 48,67% de Flávio (+515 votos pró-Lula), absorvendo a quase totalidade dos votos que haviam ido para brancos, nulos e terceiros candidatos.
         </div>
       </section>
 
@@ -971,6 +1111,22 @@
         </div>
       </section>
 
+      <!-- Banner de Transição para a Aba 5 -->
+      <div class="step-transition-banner" onclick="switchTab('diptych')">
+        <div class="flex items-center gap-3">
+          <span class="p-2.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <i class="fa-solid fa-circle-dot text-base"></i>
+          </span>
+          <div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Próximo Passo na Leitura Analítica</div>
+            <div class="text-sm font-bold text-white">O impacto do tamanho eleitoral: Díptico Cartográfico Ponderado</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5 hover:underline">
+          Ver Metrópoles e Bolhas Ponderadas <i class="fa-solid fa-arrow-right"></i>
+        </span>
+      </div>
+
     </div>
 
     <!-- ========================================== -->
@@ -1004,6 +1160,12 @@
         <!-- Grade de Destaque das Capitais -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2" id="capitals-cards-grid">
           <!-- Injetado dinamicamente via JS -->
+        </div>
+
+        <!-- Bloco de Condução de Leitura das Capitais -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-building-columns text-rose-400"></i> O Efeito Decisivo das Regiões Metropolitanas</div>
+          Nas grandes metrópoles, o ganho de Lula foi desproporcionalmente concentrado: avançou <strong>+8,9 pp em São Paulo</strong>, <strong>+8,0 pp em Salvador</strong> e <strong>+7,8 pp em Belo Horizonte</strong>. Em contrapartida, Flávio cresceu abaixo de +2,5 pp nas principais capitais e registrou recuo nominal em Salvador (-0,3 pp). Essa diferença de ritmo nos grandes colégios eleitorais gerou a maior parte da ampliação de saldo líquido em favor de Lula.
         </div>
       </section>
 
@@ -1044,7 +1206,31 @@
             <!-- Cards visuais das bolhas municipais gerados via JS -->
           </div>
         </div>
+
+        <!-- Bloco de Condução de Leitura do Díptico -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-circle-nodes text-sky-400"></i> Como Interpretar as Escalas Espelhadas</div>
+          O tamanho de cada círculo é ponderado pelo eleitorado apto (<strong>raio proporcional à raiz quadrada dos aptos</strong>), eliminando a distorção geográfica de cidades grandes territorialmente mas com pouco eleitorado.<br>
+          • <strong>Avanço de Lula (Escala Sequencial Contínua):</strong> Registrou ganho positivo de pontos percentuais em todas as principais metrópoles (vermelhos mais intensos indicam avanços acima de +8 pp).<br>
+          • <strong>Desempenho de Flávio (Escala Divergente Bipolar):</strong> Em azul estão as cidades onde Flávio avançou (Sul e Centro-Oeste); em <strong>vermelho estão as cidades onde Flávio recuou</strong> frente ao 1ºT (destaque para capitais nordestinas como Salvador, com -0,3 pp).
+        </div>
       </section>
+
+      <!-- Banner de Transição para a Aba 6 -->
+      <div class="step-transition-banner" onclick="switchTab('sections')">
+        <div class="flex items-center gap-3">
+          <span class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <i class="fa-solid fa-list-check text-base"></i>
+          </span>
+          <div>
+            <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Última Etapa da Auditoria</div>
+            <div class="text-sm font-bold text-white">Inspeção no nível micro: Auditoria Seção a Seção e Detecção de Outliers</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5 hover:underline">
+          Auditar Urnas Individuais <i class="fa-solid fa-arrow-right"></i>
+        </span>
+      </div>
 
     </div>
 
@@ -1077,6 +1263,12 @@
               <option value="MANTEVE_LIDERANCA">MANTEVE_LIDERANCA</option>
             </select>
           </div>
+        </div>
+
+        <!-- Bloco de Condução de Auditoria de Microdados -->
+        <div class="guidance-box">
+          <div class="guidance-tag"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Instruções de Auditoria no Nível da Seção</div>
+          Esta visualização permite conferir qualquer urna individualizada do país. A classificação categórica identifica seções com <strong>VIRADA_LULA</strong> (Flávio liderou no 1T e Lula virou no 2T), <strong>VIRADA_ADVERSARIO</strong> (Lula liderou no 1T e Flávio virou no 2T) e <strong>MANTEVE_LIDERANCA</strong>. É possível filtrar por município ou zona eleitoral para rastrear variações atípicas em bairros e zonas periféricas.
         </div>
 
         <div class="overflow-x-auto max-h-[520px]">
@@ -1211,6 +1403,9 @@
       const targetBtn = document.getElementById(`btn-tab-${tabId}`);
       if (targetContent) targetContent.classList.remove('hidden');
       if (targetBtn) targetBtn.classList.add('active');
+
+      // Scroll suave para o início do conteúdo ao mudar de aba
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
       // Redesenha gráficos para recalcular dimensões de containers que estavam ocultos
       setTimeout(() => {
