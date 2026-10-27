@@ -1,7 +1,8 @@
 # Especificação 03: Motor Analítico, Métricas de Virada e DuckDB OLAP
 
 **Agente Responsável:** `agent-analytics` (`src/virada_eleitoral/analytics/`)  
-**Requisitos Cobertos:** `REQ-ANAL-01`, `REQ-ANAL-02`, `REQ-ANAL-03`
+**Requisitos Cobertos:** `REQ-ANAL-01`, `REQ-ANAL-02`, `REQ-ANAL-03`  
+**Escopo Mandatório:** Eleição Presidencial de 2026 (2º turno: 25/10/2026 — Luiz Inácio Lula da Silva vs. Flávio Bolsonaro)
 
 ---
 
@@ -51,11 +52,25 @@ END AS classificacao_virada
 
 ---
 
-## 3. Dinâmica de Absorção e Migração Aparente (`REQ-ANAL-03`)
+## 3. Dinâmica de Absorção, Migração e Construção dos Votos de Lula no 2T (`REQ-ANAL-03`)
 
-Quantificação de como o candidato Lula atraiu votos disponíveis no 2º turno:
-$$\text{pool\_terceiros} = \text{votos\_outros\_1t}$$
-$$\text{eficiencia\_absorcao\_outros} = \text{ROUND}\left(\frac{\text{delta\_votos\_lula}}{\text{NULLIF}(\text{pool\_terceiros}, 0)}, 4\right)$$
+O objetivo analítico central é mapear como o candidato Luiz Inácio Lula da Silva totalizou seus votos no 2º turno de 25/10/2026 frente a Flávio Bolsonaro, respondendo formalmente de onde se originaram seus novos votos nominais ($\Delta \text{Votos}_{13}$):
+
+1. **Eficiência de Absorção do Pool de Terceiros:**
+   $$\text{pool\_terceiros} = \text{votos\_outros\_1t}$$
+   $$\text{eficiencia\_absorcao\_outros} = \text{ROUND}\left(\frac{\text{delta\_votos\_lula}}{\text{NULLIF}(\text{pool\_terceiros}, 0)}, 4\right)$$
+
+2. **Decomposição das Fontes de Expansão Votante:**
+   Em cada seção, município ou UF, a capacidade de expansão de votos entre o 1T e o 2T decorre de quatro fontes mensuráveis:
+   - **Votos de Terceiros Candidatos do 1T:** $\text{pool\_terceiros} = \text{votos\_outros\_1t}$
+   - **Migração de Votos Brancos:** $\Delta \text{Brancos} = \max(0, \text{votos\_brancos\_1t} - \text{votos\_brancos\_2t})$
+   - **Migração de Votos Nulos:** $\Delta \text{Nulos} = \max(0, \text{votos\_nulos\_1t} - \text{votos\_nulos\_2t})$
+   - **Ativação de Abstenções (Novos Votantes):** $\Delta \text{Comparecimento} = \text{comparecimento\_2t} - \text{comparecimento\_1t}$
+
+3. **Balanço Contábil de Construção de Votos:**
+   $$\text{Votos}_{13, 2T} = \text{Votos}_{13, 1T} + \Delta \text{Votos}_{13}$$
+   $$\Delta \text{Votos}_{13} \le \text{pool\_terceiros} + \Delta \text{Brancos} + \Delta \text{Nulos} + \max(0, \Delta \text{Comparecimento})$$
+   Essa contabilidade fundamenta os fluxos de migração representados nos diagramas Sankey exportados para o frontend.
 
 ---
 

@@ -1,7 +1,8 @@
 # Especificação 04: Exportação de Dados Estáticos, GeoJSON e Visualização Web
 
 **Agente Responsável:** `agent-exporter` (`src/virada_eleitoral/export/`)  
-**Requisitos Cobertos:** `REQ-EXPO-01`, `REQ-EXPO-02`
+**Requisitos Cobertos:** `REQ-EXPO-01`, `REQ-EXPO-02`  
+**Escopo Mandatório:** Eleições Presidenciais de 2026 (2º turno: 25/10/2026 — Luiz Inácio Lula da Silva vs. Flávio Bolsonaro)
 
 ---
 
@@ -11,20 +12,21 @@ O módulo `export` é responsável por extrair dados das views do DuckDB e mater
 
 ```text
 data/export/
-├── metadata.json             # Metadados do processamento, versão do pipeline, hash do banco
-├── summary_national.json     # Totais consolidados do Brasil e contagem de viradas
-├── summary_uf.json           # Resumo por Unidade Federativa
-├── swing_cities.json         # Todas as cidades que tiveram virada de liderança
-├── top_urnas_virada.json     # Ranking das 1.000 maiores viradas em urnas individuais
+├── metadata.json                 # Metadados do processamento, versão do pipeline, hash do banco (2026)
+├── summary_national.json         # Totais consolidados do Brasil e contagem de viradas
+├── summary_uf.json               # Resumo por Unidade Federativa
+├── swing_cities.json             # Todas as cidades que tiveram virada de liderança
+├── top_urnas_virada.json         # Ranking das maiores viradas em urnas individuais
+├── vote_migration_flow.json      # Decomposição de fontes e fluxo Sankey da construção de votos de Lula no 2T
 └── geo/
-    ├── ufs_virada.topojson   # Malha estadual com atributos consolidados
+    ├── ufs_virada.topojson       # Malha estadual com atributos consolidados
     └── municipios_virada.topojson # Malha municipal simplificada com atributos de virada
 ```
 
 ### 1.1. Contrato `summary_national.json`
 ```json
 {
-  "ano_eleicao": 2022,
+  "ano_eleicao": 2026,
   "total_secoes_analisadas": 472075,
   "total_secoes_pareadas": 471920,
   "total_validos_1t": 118580000,
@@ -42,7 +44,34 @@ data/export/
 }
 ```
 
-### 1.2. Contrato `swing_cities.json`
+### 1.2. Contrato `vote_migration_flow.json` (Fluxo Sankey / Decomposição de Votos de Lula)
+Payload dedicado para alimentar o componente visual de fluxo aluvial / diagrama de Sankey ou Waterfall no frontend, demonstrando como Lula construiu seu total final de votos no 2º turno (25/10/2026):
+```json
+{
+  "ano_eleicao": 2026,
+  "turno": 2,
+  "data_segundo_turno": "2026-10-25",
+  "candidato": "Luiz Inácio Lula da Silva",
+  "total_votos_2t": 60345999,
+  "decomposicao_fontes": {
+    "base_1t_lula": 57259504,
+    "delta_ganho_total": 3086495,
+    "absorcao_terceiros_1t": 2150000,
+    "absorcao_migracao_brancos": 380000,
+    "absorcao_migracao_nulos": 240000,
+    "absorcao_novos_comparecentes": 316495
+  },
+  "fluxos_sankey": [
+    {"origem": "Lula (1º Turno)", "destino": "Lula (2º Turno)", "valor": 57259504},
+    {"origem": "Terceiros Candidatos (1º Turno)", "destino": "Lula (2º Turno)", "valor": 2150000},
+    {"origem": "Votos em Branco (1º Turno)", "destino": "Lula (2º Turno)", "valor": 380000},
+    {"origem": "Votos Nulos (1º Turno)", "destino": "Lula (2º Turno)", "valor": 240000},
+    {"origem": "Novos Comparecentes (2º Turno)", "destino": "Lula (2º Turno)", "valor": 316495}
+  ]
+}
+```
+
+### 1.3. Contrato `swing_cities.json`
 Array de municípios onde ocorreu inversão de vencedor entre turnos:
 ```json
 [
