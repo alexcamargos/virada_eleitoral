@@ -16,9 +16,13 @@ from tests.fixtures.builder import build_synthetic_bu_dataset
 from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
 from virada_eleitoral.contracts.exceptions import ExportError
 from virada_eleitoral.contracts.models import (
+    EcologicalRegressionScatterPayload,
     NationalSummaryPayload,
+    SankeyVoteFlowsPayload,
     StateSummaryItem,
     SwingCityPayload,
+    TransitionDistributionPayload,
+    WaterfallTurnoverPayload,
 )
 from virada_eleitoral.export.geo_exporter import (
     export_enriched_geojson,
@@ -65,6 +69,10 @@ def test_export_static_json_payloads_success(
     assert "summary_uf" in files
     assert "swing_cities" in files
     assert "top_urnas_virada" in files
+    assert "waterfall_turnover_balance" in files
+    assert "sankey_vote_flows" in files
+    assert "transition_distribution_groups" in files
+    assert "ecological_regression_scatter" in files
     assert "metadata" in files
 
     # 1. Validar schema de summary_national.json
@@ -92,7 +100,27 @@ def test_export_static_json_payloads_success(
         top_data = json.load(f)
     assert isinstance(top_data, list)
 
-    # 5. Validar metadata.json
+    # 5. Validar waterfall_turnover_balance.json (PILAR 1)
+    with files["waterfall_turnover_balance"].open("r", encoding="utf-8") as f:
+        waterfall_data = json.load(f)
+    WaterfallTurnoverPayload.model_validate(waterfall_data)
+
+    # 6. Validar sankey_vote_flows.json (PILAR 2)
+    with files["sankey_vote_flows"].open("r", encoding="utf-8") as f:
+        sankey_data = json.load(f)
+    SankeyVoteFlowsPayload.model_validate(sankey_data)
+
+    # 7. Validar transition_distribution_groups.json (PILAR 3)
+    with files["transition_distribution_groups"].open("r", encoding="utf-8") as f:
+        transition_data = json.load(f)
+    TransitionDistributionPayload.model_validate(transition_data)
+
+    # 8. Validar ecological_regression_scatter.json (PILAR 4)
+    with files["ecological_regression_scatter"].open("r", encoding="utf-8") as f:
+        scatter_data = json.load(f)
+    EcologicalRegressionScatterPayload.model_validate(scatter_data)
+
+    # 9. Validar metadata.json
     with files["metadata"].open("r", encoding="utf-8") as f:
         meta_data = json.load(f)
     assert meta_data["pipeline"] == "virada_eleitoral"

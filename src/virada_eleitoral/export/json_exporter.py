@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
+from virada_eleitoral.analytics.metrics import (
+    build_ecological_regression_scatter_payload,
+    build_sankey_vote_flows,
+    calculate_waterfall_turnover_balance,
+    estimate_ecological_transition_matrix,
+)
 from virada_eleitoral.contracts.exceptions import ExportError
 
 # Teto de 200 KB sem compressão para summary_national.json + summary_uf.json
@@ -22,7 +28,7 @@ STATIC_PAYLOAD_MAX_BYTES = 200 * 1024
 def export_static_json_payloads(
     consolidator: DuckDbConsolidator,
     export_dir: Path,
-    ano: int = 2022,
+    ano: int = 2026,
 ) -> dict[str, Path]:
     """Extrai views analíticas do DuckDB e materializa arquivos JSON validados.
 
@@ -31,7 +37,7 @@ def export_static_json_payloads(
     Args:
         consolidator: Instância do motor DuckDB consolidado.
         export_dir: Diretório raiz onde os artefatos serão gravados.
-        ano: Ano de referência da eleição.
+        ano: Ano de referência da eleição (padrão 2026).
 
     Returns:
         Dicionário mapeando os identificadores dos artefatos para seus caminhos em disco.
@@ -81,7 +87,38 @@ def export_static_json_payloads(
         json.dump(top_data, f, indent=2, ensure_ascii=False)
     generated_files["top_urnas_virada"] = top_path
 
-    # 5. metadata.json
+    # 5. waterfall_turnover_balance.json (PILAR 1)
+    waterfall_payload = calculate_waterfall_turnover_balance(ano=ano)
+    waterfall_path = export_dir / "waterfall_turnover_balance.json"
+    with waterfall_path.open("w", encoding="utf-8") as f:
+        f.write(waterfall_payload.model_dump_json(indent=2))
+    generated_files["waterfall_turnover_balance"] = waterfall_path
+
+    # 6. sankey_vote_flows.json (PILAR 2)
+    sankey_payload = build_sankey_vote_flows(ano=ano)
+    sankey_path = export_dir / "sankey_vote_flows.json"
+    with sankey_path.open("w", encoding="utf-8") as f:
+        f.write(sankey_payload.model_dump_json(indent=2))
+    generated_files["sankey_vote_flows"] = sankey_path
+
+    # 7. transition_distribution_groups.json (PILAR 3)
+    transition_payload = estimate_ecological_transition_matrix(ano=ano)
+    transition_path = export_dir / "transition_distribution_groups.json"
+    with transition_path.open("w", encoding="utf-8") as f:
+        f.write(transition_payload.model_dump_json(indent=2))
+    generated_files["transition_distribution_groups"] = transition_path
+
+    # 8. ecological_regression_scatter.json (PILAR 4)
+    sections_df = consolidator.conn.sql("SELECT * FROM pair_sections").pl()
+    scatter_payload = build_ecological_regression_scatter_payload(
+        sections_df, ano=ano, max_samples=900
+    )
+    scatter_path = export_dir / "ecological_regression_scatter.json"
+    with scatter_path.open("w", encoding="utf-8") as f:
+        f.write(scatter_payload.model_dump_json(indent=2))
+    generated_files["ecological_regression_scatter"] = scatter_path
+
+    # 9. metadata.json
     meta_path = export_dir / "metadata.json"
     metadata_payload = {
         "pipeline": "virada_eleitoral",
@@ -96,5 +133,7 @@ def export_static_json_payloads(
     with meta_path.open("w", encoding="utf-8") as f:
         json.dump(metadata_payload, f, indent=2, ensure_ascii=False)
     generated_files["metadata"] = meta_path
+
+    return generated_files
 
     return generated_files
