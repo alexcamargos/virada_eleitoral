@@ -14,21 +14,22 @@ from virada_eleitoral.contracts.exceptions import SchemaValidationError
 
 def pivot_presidential_bu(
     csv_path: Path,
-    ano: int,
-    turno: int,
+    ano: int = 2026,
+    turno: int = 1,
     conn: duckdb.DuckDBPyConnection | None = None,
 ) -> pl.DataFrame:
     """Filtra cargo Presidente e pivota votos nominais por seção eleitoral via DuckDB.
 
     Args:
         csv_path: Caminho do arquivo CSV de BU descompactado.
-        ano: Ano da eleição (ex.: 2022).
+        ano: Ano da eleição auditada (padrão 2026).
         turno: Turno correspondente ao arquivo (1 ou 2).
         conn: Conexão DuckDB reutilizável (opcional).
 
     Returns:
         pl.DataFrame: DataFrame Polars com uma linha por seção contendo votos consolidados
-            de Lula (13), Adversário (22), outros candidatos, brancos, nulos e aptos.
+            de Lula (13), Adversário (22), outros candidatos, terceiros discriminados (Cury,
+            Caiado, Renan/Zema, esquerda), brancos, nulos e aptos.
 
     Raises:
         SchemaValidationError: Se o arquivo CSV não contiver as colunas mínimas esperadas.
@@ -92,6 +93,14 @@ def pivot_presidential_bu(
         COALESCE(
             SUM(CASE WHEN nr_votavel NOT IN (13, 22, 95, 96) THEN qt_votos ELSE 0 END), 0
         ) AS votos_outros,
+        COALESCE(SUM(CASE WHEN nr_votavel = 45 THEN qt_votos ELSE 0 END), 0) AS votos_cury,
+        COALESCE(SUM(CASE WHEN nr_votavel = 44 THEN qt_votos ELSE 0 END), 0) AS votos_caiado,
+        COALESCE(
+            SUM(CASE WHEN nr_votavel IN (30, 33) THEN qt_votos ELSE 0 END), 0
+        ) AS votos_renan_zema,
+        COALESCE(
+            SUM(CASE WHEN nr_votavel IN (50, 16, 29, 80) THEN qt_votos ELSE 0 END), 0
+        ) AS votos_outros_esquerda,
         COALESCE(SUM(CASE WHEN nr_votavel = 95 THEN qt_votos ELSE 0 END), 0) AS votos_brancos,
         COALESCE(SUM(CASE WHEN nr_votavel = 96 THEN qt_votos ELSE 0 END), 0) AS votos_nulos
     FROM raw_filtered

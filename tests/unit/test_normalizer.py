@@ -93,6 +93,106 @@ def test_pivot_presidential_bu_filters_cargo_and_pivots(tmp_path: Path) -> None:
     assert row["aptos"] == 300
 
 
+def test_pivot_presidential_bu_subcandidates_2026(tmp_path: Path) -> None:
+    """Verifica a discriminação de votos de Cury, Caiado, Renan/Zema e esquerda no 1T."""
+    csv_rows = [
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 13,
+            "QT_VOTOS": 120,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 22,
+            "QT_VOTOS": 100,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 45,  # Cury
+            "QT_VOTOS": 40,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 44,  # Caiado
+            "QT_VOTOS": 30,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 30,  # Renan / Zema
+            "QT_VOTOS": 20,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+        {
+            "SG_UF": "SP",
+            "CD_MUNICIPIO": 71072,
+            "NM_MUNICIPIO": "SAO PAULO",
+            "NR_ZONA": 1,
+            "NR_SECAO": 20,
+            "CD_CARGO": 1,
+            "NR_VOTAVEL": 50,  # Esquerda
+            "QT_VOTOS": 10,
+            "QT_APTOS": 400,
+            "QT_COMPARECIMENTO": 350,
+            "QT_ABSTENCAO": 50,
+        },
+    ]
+
+    csv_file = tmp_path / "bu_subcandidates_2026.csv"
+    generate_bu_csv(csv_rows, csv_file)
+
+    df = pivot_presidential_bu(csv_file, ano=2026, turno=1)
+    assert len(df) == 1
+    row = df.row(0, named=True)
+
+    assert row["votos_lula"] == 120
+    assert row["votos_adv"] == 100
+    assert row["votos_cury"] == 40
+    assert row["votos_caiado"] == 30
+    assert row["votos_renan_zema"] == 20
+    assert row["votos_outros_esquerda"] == 10
+    assert row["votos_outros"] == 100  # 40 + 30 + 20 + 10 = 100
+    assert row["votos_validos"] == 320  # 120 + 100 + 100 = 320
+
+
 def test_pivot_presidential_bu_missing_file() -> None:
     """Verifica que SchemaValidationError é lançada quando o arquivo não existe."""
     fake_path = Path("c:/caminho/inexistente/bu.csv")
