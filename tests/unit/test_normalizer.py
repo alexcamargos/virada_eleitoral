@@ -339,4 +339,3 @@ def test_pairing_propagates_subcandidate_columns(tmp_path: Path) -> None:
     assert r101["votos_caiado_1t"] == 10
     assert r101["votos_renan_zema_1t"] == 5
     assert r101["votos_outros_esquerda_1t"] == 0
-
