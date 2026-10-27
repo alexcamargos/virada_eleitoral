@@ -6,9 +6,9 @@
 [![Testing](https://img.shields.io/badge/tests-pytest-purple.svg)](https://docs.pytest.org/)
 [![Coverage](https://img.shields.io/badge/coverage->95%25-brightgreen.svg)](https://pytest-cov.readthedocs.io/)
 
-Plataforma de alta performance para auditoria técnica, processamento de Boletins de Urna (BUs) e mapeamento cartográfico de reversões de resultado (*viradas*) nas eleições presidenciais brasileiras (com foco primário nas Eleições Gerais de 2022).
+Plataforma de alta performance para auditoria técnica, processamento de Boletins de Urna (BUs) e mapeamento cartográfico e de fluxo da construção de votos e viradas no **2º Turno da Eleição Presidencial de 2026** (realizado em 25/10/2026 entre **Luiz Inácio Lula da Silva** e **Flávio Bolsonaro**).
 
-O sistema processa determinística e exaustivamente as ~470.000 a 500.000 seções eleitorais do país (~40 milhões de linhas de registros), pareando o 1º e o 2º turno para quantificar variações nominais, pontos percentuais, absorção de votos de terceiros candidatos e cidades pêndulo (*swing cities*).
+O sistema processa determinística e exaustivamente as ~470.000 a 500.000 seções eleitorais do país (~40 milhões de linhas de registros), pareando o 1º e o 2º turno para responder à pergunta central: **como Lula construiu seu total final de votos no 2º turno de 2026?** A decomposição analisa as fontes dos novos votos nominais (absorção de terceiros candidatos do 1T, votos brancos, votos nulos e novos comparecentes) e mede a virada de liderança frente a Flávio Bolsonaro nos níveis Nacional, Estadual, Municipal (*swing cities*) e Seção Eleitoral.
 
 ---
 
@@ -53,25 +53,25 @@ A ferramenta de linha de comando modular oferece subcomandos para cada fase do p
 ### 3.1. Pipeline Completo (`run-all`)
 Executa sequencialmente normalização, consolidação, exportação e verificação:
 ```bash
-uv run virada run-all --ano 2022 --uf ALL --raw-dir data/raw --db-path data/virada_eleitoral.duckdb --export-dir data/export
+uv run virada run-all --ano 2026 --uf ALL --raw-dir data/raw --db-path data/virada_eleitoral.duckdb --export-dir data/export
 ```
 
 ### 3.2. Subcomandos Modulares
 - **Coleta e Integridade:**
   ```bash
-  uv run virada harvest --ano 2022 --input-dir data/raw --manifest-dir data/raw
+  uv run virada harvest --ano 2026 --input-dir data/raw --manifest-dir data/raw
   ```
 - **Normalização e Pareamento 1T x 2T:**
   ```bash
-  uv run virada normalize --ano 2022 --uf ALL --raw-dir data/raw --processed-dir data/processed
+  uv run virada normalize --ano 2026 --uf ALL --raw-dir data/raw --processed-dir data/processed
   ```
 - **Consolidação DuckDB OLAP:**
   ```bash
-  uv run virada consolidate --ano 2022 --processed-dir data/processed --db-path data/virada_eleitoral.duckdb
+  uv run virada consolidate --ano 2026 --processed-dir data/processed --db-path data/virada_eleitoral.duckdb
   ```
 - **Exportação JSON e GeoJSON:**
   ```bash
-  uv run virada export --ano 2022 --db-path data/virada_eleitoral.duckdb --out-dir data/export
+  uv run virada export --ano 2026 --db-path data/virada_eleitoral.duckdb --out-dir data/export
   ```
 - **Auditoria Formal de Invariantes (DoD):**
   ```bash

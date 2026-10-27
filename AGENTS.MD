@@ -1,12 +1,22 @@
 # AGENTS.MD: Governança de Agentes e Desenvolvimento Orientado por Especificações (SDD)
 
 ## 1. Visão Geral do Sistema e Missão Analítica
-O projeto **`virada_eleitoral`** é uma plataforma de engenharia de dados, modelagem analítica OLAP e exportação de artefatos geoespaciais e tabulares de alta performance para auditoria técnica do desempenho eleitoral nas eleições presidenciais brasileiras (com foco primário nas Eleições Gerais de 2022 e suporte a pleitos análogos).
+O projeto **`virada_eleitoral`** é uma plataforma de engenharia de dados, modelagem analítica OLAP e exportação de artefatos geoespaciais e tabulares de alta performance para auditoria técnica do desempenho eleitoral nas eleições presidenciais brasileiras.
 
-A missão primordial do sistema é processar e parear de ponta a ponta mais de **40 milhões de linhas de registros de Boletins de Urna (BUs)** disponibilizados pelo Tribunal Superior Eleitoral (TSE), analisando determinística e exaustivamente as cerca de **470.000 a 500.000 seções eleitorais** do país entre o 1º e o 2º turno para quantificar:
-- **Deltas de Votação Nominal e Pontos Percentuais:** Variação absoluta e relativa do candidato Luiz Inácio Lula da Silva e seu adversário em cada urna do país.
+> [!IMPORTANT]
+> **MANDATO EXCLUSIVO E DEFINITIVO DE ESCOPO ELEITORAL:**
+> O sistema tem como objeto de análise estrito, mandatório e único o **2º Turno da Eleição Presidencial de 2026**, realizado em **25/10/2026**, disputado entre os candidatos **Luiz Inácio Lula da Silva** (PT, número 13) e **Flávio Bolsonaro** (PL, número 22).
+> É **terminantemente vedado** a qualquer agente autônomo de inteligência artificial, subagente ou processo automatizado inferir, alternar, retroceder ou configurar o pipeline para outro pleito (como 2022 ou pleitos municipais). Todo e qualquer desenvolvimento, teste e contrato deve refletir exclusivamente a eleição de 2026.
+
+A missão primordial do sistema é processar e parear de ponta a ponta mais de **40 milhões de linhas de registros de Boletins de Urna (BUs)** disponibilizados pelo Tribunal Superior Eleitoral (TSE) para as **Eleições Presidenciais de 2026**, analisando determinística e exaustivamente as cerca de **470.000 a 500.000 seções eleitorais** do país entre o 1º turno e o 2º turno (25/10/2026) para quantificar e evidenciar:
+- **Construção dos Votos Finais de Lula no 2º Turno:** Análise matemática, estatística e contábil discriminando exatamente de onde vieram os votos obtidos por Luiz Inácio Lula da Silva no 2T que ele não possuía no 1T:
+  1. Absorção de votos de terceiros candidatos do 1º turno.
+  2. Absorção/migração de eleitores que votaram em branco no 1T.
+  3. Absorção/migração de eleitores que votaram nulo no 1T.
+  4. Absorção de novos comparecentes decorrentes da redução de abstenção ($\Delta \text{Comparecimento}$).
+- **Deltas de Votação Nominal e Pontos Percentuais:** Variação absoluta e relativa do candidato Luiz Inácio Lula da Silva (13) e de seu adversário Flávio Bolsonaro (22) em cada urna do país.
 - **Classificação Formal de Viradas:** Categorização objetiva das seções e territórios em `VIRADA_LULA`, `VIRADA_ADVERSARIO`, `MANTEVE_LIDERANCA` ou `MANTEVE_DESVANTAGEM`.
-- **Análise de Migração Aparente e Absorção:** Mensuração de como votos de terceiros candidatos do 1T (ex.: Simone Tebet, Ciro Gomes), abstenções, brancos e nulos foram absorvidos no 2T.
+- **Visualização de Fluxo Eleitoral:** Estruturação de dados para representação visual em Diagramas de Sankey e Gráficos de Decomposição em Cascata (Waterfall) para jornalismo de dados de alto impacto.
 - **Rollup Hierárquico Multinível:** Agregação estrita sem distorção em três níveis territoriais:
   1. **Nível Macro (Nacional e UF):** Contribuição de cada estado e região para a margem líquida final.
   2. **Nível Meso (Município):** Identificação de cidades pêndulo (*swing cities*), reversões de liderança e enriquecimento com código IBGE de 7 dígitos.
@@ -109,7 +119,7 @@ virada_eleitoral/
 - **Competências & Restrições:**
   - Proibição de uso de Pandas puro: executar operações com `DuckDB` ou `Polars LazyFrame`.
   - Tratamento determinístico de seções agregadas ou ausentes no 2T por contingência (`FULL OUTER JOIN` controlado com geração de logs de auditoria em `unpaired_sections_audit`).
-  - Agrupamento em pivot de candidatos (13 Lula, 22 Bolsonaro, votos em outros candidatos, brancos, nulos e abstenções).
+  - Agrupamento em pivot de candidatos (13 Luiz Inácio Lula da Silva, 22 Flávio Bolsonaro, votos em terceiros candidatos do 1T, brancos, nulos e abstenções).
 
 ### 4.3. Agent Card: Analytical Engine & Metric Calculator (`agent-analytics`)
 - **Missão:** Computar todas as fórmulas matemáticas de deltas, margem líquida, taxas de conversão percentual, classificação categórica e consolidação OLAP.
