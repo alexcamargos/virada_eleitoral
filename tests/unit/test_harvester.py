@@ -441,3 +441,46 @@ def test_remote_tse_bu_provider_fetch_expected_sha512(mocker: MockerFixture) -> 
     mock_resp.status_code = 404
     res_none = provider.fetch_expected_sha512("https://cdn.tse.jus.br/notfound.sha512")
     assert res_none is None
+
+
+def test_local_bu_provider_unpack_national_dataset(tmp_path: Path) -> None:
+    """Verifica desempacotamento e particionamento do dataset nacional por UF."""
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir(parents=True)
+    provider = LocalBuProvider(raw_dir)
+
+    # 1. Sem arquivo presente retorna 0
+    assert provider.unpack_national_dataset_if_present(ano=2026) == 0
+
+    # 2. Com CSV simulado em extracted/
+    ext_dir = raw_dir / "extracted"
+    ext_dir.mkdir(parents=True)
+    csv_file = ext_dir / "votacao_secao_2026_BR.csv"
+    csv_file.write_text(
+        "SG_UF;CD_MUNICIPIO;NM_MUNICIPIO;NR_ZONA;NR_SECAO;CD_CARGO;NR_VOTAVEL;QT_VOTOS;NR_TURNO\n"
+        "RR;1;BOA VISTA;1;1;1;13;50;1\n"
+        "RR;1;BOA VISTA;1;1;1;22;50;2\n",
+        encoding="iso-8859-1",
+    )
+    generated = provider.unpack_national_dataset_if_present(ano=2026)
+    assert generated == 2
+    assert (raw_dir / "bweb_1t_RR_2026.csv").exists()
+    assert (raw_dir / "bweb_2t_RR_2026.csv").exists()
+
+    # Segunda chamada não recria arquivos existentes
+    assert provider.unpack_national_dataset_if_present(ano=2026) == 0
+
+
+@pytest.mark.asyncio
+async def test_remote_tse_bu_provider_download_national(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Verifica invocação do download consolidado nacional de Presidente."""
+    provider = RemoteTseBuProvider()
+    mock_bundle = mocker.MagicMock()
+    mock_bundle.ano_eleicao = 2026
+    mock_bundle.uf = "BR"
+
+    mocker.patch.object(provider, "download_bu_file", return_value=mock_bundle)
+    bundle = await provider.download_national_bu_dataset(dest_dir=tmp_path, ano=2026)
+    assert bundle.uf == "BR"
