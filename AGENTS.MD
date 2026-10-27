@@ -16,7 +16,11 @@ A missão primordial do sistema é processar e parear de ponta a ponta mais de *
   4. Absorção de novos comparecentes decorrentes da redução de abstenção ($\Delta \text{Comparecimento}$).
 - **Deltas de Votação Nominal e Pontos Percentuais:** Variação absoluta e relativa do candidato Luiz Inácio Lula da Silva (13) e de seu adversário Flávio Bolsonaro (22) em cada urna do país.
 - **Classificação Formal de Viradas:** Categorização objetiva das seções e territórios em `VIRADA_LULA`, `VIRADA_ADVERSARIO`, `MANTEVE_LIDERANCA` ou `MANTEVE_DESVANTAGEM`.
-- **Visualização de Fluxo Eleitoral:** Estruturação de dados para representação visual em Diagramas de Sankey e Gráficos de Decomposição em Cascata (Waterfall) para jornalismo de dados de alto impacto.
+- **Visualização e Entrega Mínima Obrigatória (Os 4 Pilares Gráficos):** Estruturação e exportação obrigatória dos dados analíticos para 4 produtos visuais de alto impacto:
+  1. *Gráfico em Cascata da Virada (Waterfall de Saldo Líquido):* Decomposição de como a desvantagem de 2,22 mi no 1T virou vitória de 4,43 mi no 2T.
+  2. *Diagrama de Fluxo Aluvial / Sankey:* Mapeamento bruto dos fluxos de votos migrados de cada grupo do 1T para os destinos do 2T.
+  3. *Matriz de Destino em Barras Horizontais Empilhadas (100% Stacked Bar):* Decomposição percentual e nominal para onde foram os eleitores de terceiros candidatos, brancos/nulos e ausentes.
+  4. *Dispersão e Regressão Linear Seção a Seção (Scatter Plot):* Evidência empírica da sensibilidade do crescimento de Lula em função da densidade de brancos e nulos no 1T (+0,8 pp por 1 pp de branco/nulo).
 - **Rollup Hierárquico Multinível:** Agregação estrita sem distorção em três níveis territoriais:
   1. **Nível Macro (Nacional e UF):** Contribuição de cada estado e região para a margem líquida final.
   2. **Nível Meso (Município):** Identificação de cidades pêndulo (*swing cities*), reversões de liderança e enriquecimento com código IBGE de 7 dígitos.
@@ -122,20 +126,26 @@ virada_eleitoral/
   - Agrupamento em pivot de candidatos (13 Luiz Inácio Lula da Silva, 22 Flávio Bolsonaro, votos em terceiros candidatos do 1T, brancos, nulos e abstenções).
 
 ### 4.3. Agent Card: Analytical Engine & Metric Calculator (`agent-analytics`)
-- **Missão:** Computar todas as fórmulas matemáticas de deltas, margem líquida, taxas de conversão percentual, classificação categórica e consolidação OLAP.
+- **Missão:** Computar todas as fórmulas matemáticas de deltas, margem líquida, taxas de conversão percentual, classificação categórica, matriz de transição de votos por inferência ecológica e consolidação OLAP.
 - **Competências & Restrições:**
   - Cálculo de `delta_votos_lula`, `delta_pp_lula`, `delta_margem` e classificação categórica:
     - `VIRADA_LULA`: Lula perdeu no 1T e venceu no 2T.
     - `VIRADA_ADVERSARIO`: Lula venceu no 1T e perdeu no 2T.
     - `MANTEVE_LIDERANCA`: Lula venceu em ambos os turnos.
     - `MANTEVE_DESVANTAGEM`: Lula perdeu em ambos os turnos.
+  - Modelagem estatística da matriz de transição de votos (EI / WLS) e cálculo dos degraus de saldo líquido da virada (Waterfall de $\Delta \text{Margem}$).
   - Persistência colunar em Parquet particionado (`data/processed/ano={ano}/uf={uf}/part-*.parquet`, compressão ZSTD) e consolidação idempotente no DuckDB.
   - Rollup hierárquico das visões nacional, estadual e municipal com tratamento estrito de divisão por zero via `NULLIF` e `COALESCE`.
 
 ### 4.4. Agent Card: GeoJSON & Visualization Exporter (`agent-exporter`)
-- **Missão:** Transformar os dados analíticos consolidados em artefatos estáticos otimizados para consumo web e visualização cartográfica.
+- **Missão:** Transformar os dados analíticos consolidados em artefatos estáticos otimizados para consumo web, visualização cartográfica e os 4 pilares visuais de jornalismo de dados.
 - **Competências & Restrições:**
-  - Geração de payloads JSON estáticos (`summary_national.json`, `summary_uf.json`, `swing_cities.json`, `turnover_sections.json`).
+  - Geração dos payloads JSON estáticos dos 4 Pilares Gráficos:
+    1. `waterfall_turnover_balance.json` (Cascata de saldo líquido da virada de -2,22 mi a +4,43 mi).
+    2. `sankey_vote_flows.json` (Diagrama de fluxo aluvial de votos 1T -> 2T).
+    3. `transition_distribution_groups.json` (Barras 100% de destino de outros candidatos, brancos/nulos e ausentes).
+    4. `ecological_regression_scatter.json` (Dispersão seção a seção e reta de regressão ponderada).
+  - Geração de resumos e rankings (`summary_national.json`, `summary_uf.json`, `swing_cities.json`, `top_urnas_virada.json`).
   - Junção dos dados municipais com a malha cartográfica do IBGE (geração de TopoJSON/GeoJSON simplificado com atributos de virada).
   - Exportação opcional de partições Parquet leves para permitir consultas interativas no navegador via DuckDB-Wasm.
 

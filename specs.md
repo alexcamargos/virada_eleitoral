@@ -31,9 +31,38 @@ A decomposição contábil e estatística investiga exaustivamente:
 | `REQ-ANAL-01` | Armazenamento | Persistência colunar em Parquet particionado (`ZSTD`) e consolidação idempotente em banco analítico DuckDB (`<= 150 MB`). | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
 | `REQ-ANAL-02` | Fórmulas Analíticas | Cálculo exato de deltas nominais, deltas em pontos percentuais (`pp`), margem líquida e classificação categórica quádrupla de virada (Lula vs. Flávio Bolsonaro). | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
 | `REQ-ANAL-03` | Decomposição e Migração | Modelagem exaustiva da construção dos votos de Lula no 2T: quantificação de absorção de terceiros candidatos, brancos, nulos e novos comparecentes. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
+| `REQ-ANAL-04` | Inferência Ecológica | Estimativa estatística da matriz de transição de votos (WLS / Goodman) sobre as seções eleitorais calibrada com os totais oficiais do TSE. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
+| `REQ-ANAL-05` | Saldo Líquido (Waterfall) | Cálculo dos degraus de saldo líquido da virada (saldo Lula - Flávio por grupo de origem) para decomposição exata de $\Delta \text{Margem}$. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
 | `REQ-EXPO-01` | Contratos JSON & Sankey | Exportação determinística de payloads JSON estáticos (resumos, cidades pêndulo e matriz/fluxo de migração Sankey) validados por Pydantic v2. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
 | `REQ-EXPO-02` | Cartografia IBGE | Cruzamento geográfico e fusão com malha territorial IBGE (GeoJSON/TopoJSON simplificado) para mapas temáticos de calor e virada de 2026. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
+| `REQ-EXPO-03` | Payloads dos 4 Pilares | Geração dos 4 contratos JSON mínimos de visualização: Waterfall, Sankey, Barras Empilhadas de Destino e Dispersão de Regressão. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
 | `REQ-QA-01` | Qualidade / SDD | Suíte de testes `pytest` cobrindo 10 fixtures áureas (`FX-01` a `FX-10`), testes de invariantes e CLI unificada (`virada`) com `--ano 2026`. | [`specs/05-testing-fixtures-and-roadmap.md`](./specs/05-testing-fixtures-and-roadmap.md) |
+
+---
+
+### 1.2. A Entrega Mínima do Produto (MVP Analítico e Visual): Os 4 Pilares Gráficos
+
+Para cumprir a missão de jornalismo de dados eleitorais com rigor científico e clareza visual, o sistema tem como **entrega mínima obrigatória e inegociável** a produção dos dados para quatro representações analíticas fundamentadas no resultado oficial do TSE de 2026:
+
+1. **Pilar 1: Gráfico em Cascata da Virada (Waterfall Chart de Saldo Líquido):**
+   - **Pergunta respondida:** *Como Lula reverteu uma desvantagem de 2,22 milhões no 1T para uma vitória por 4,43 milhões no 2T?*
+   - **Estrutura:** Ponto inicial no 1T (-2,22 mi), degraus de saldo líquido (votos captados por Lula menos votos captados por Flávio em cada grupo) e ponto final no 2T (+4,43 mi).
+   - **Degraus:** Ex-brancos e nulos (+3,23 mi), Ausentes que voltaram (+1,83 mi), Saldo de retenção/perdas de base (+1,27 mi) e Terceiros candidatos (+0,32 mi).
+
+2. **Pilar 2: Diagrama de Fluxo Aluvial / Sankey de Migração de Votos:**
+   - **Pergunta respondida:** *De onde exatamente vieram todos os novos votos de Lula e de Flávio?*
+   - **Estrutura:** Fluxo multivariado entre grupos de origem no 1T (Não votou, Branco/nulo, Outros candidatos, Perdas de Lula, Perdas de Flávio) e grupos de destino no 2T (Lula, Flávio, Branco/nulo, Não votou).
+
+3. **Pilar 3: Matriz de Destino em Barras Horizontais Empilhadas (100% Stacked Bar):**
+   - **Pergunta respondida:** *Qual foi a taxa percentual de atração e abstenção dentro de cada grupo decisivo do 1T?*
+   - **Estrutura:** Três barras de distribuição (Lula, Flávio, Branco/nulo, Não votou) para:
+     a) Eleitores de outros candidatos (consolidado e quebrado por candidato relevante: Cury, Caiado, Renan/Zema).
+     b) Eleitores que votaram em branco ou nulo no 1T.
+     c) Ausentes do 1T que retornaram para votar no 2T.
+
+4. **Pilar 4: Dispersão e Reta de Regressão Seção a Seção (Scatter Plot + Trendline):**
+   - **Pergunta respondida:** *Existe evidência empírica nas urnas de que onde havia mais brancos/nulos Lula cresceu mais?*
+   - **Estrutura:** Eixo X (% de brancos e nulos no 1T sobre os aptos da seção), Eixo Y (Crescimento de Lula em pontos percentuais no 2T), nuvem de pontos de seções eleitorais e reta de tendência estimada por regressão linear ponderada (WLS), destacando a sensibilidade (ex.: `+0,8 pp para Lula a cada 1 pp de branco e nulo`).
 
 ---
 
