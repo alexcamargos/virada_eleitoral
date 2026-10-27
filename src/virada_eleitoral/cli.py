@@ -18,14 +18,28 @@ from rich.console import Console
 from rich.table import Table
 
 from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
-from virada_eleitoral.analytics.metrics import validate_dataframe_invariants
+from virada_eleitoral.analytics.metrics import (
+    validate_dataframe_invariants,
+    validate_transition_matrix_invariants,
+    validate_turnover_waterfall_invariants,
+)
 from virada_eleitoral.analytics.storage import write_partitioned_parquet
 from virada_eleitoral.contracts.models import (
+    EcologicalRegressionScatterPayload,
+    FlavioPerformanceBubbleMapPayload,
+    LulaAdvanceBubbleMapPayload,
     NationalSummaryPayload,
+    SankeyVoteFlowsPayload,
+    SoutheastDeepDivePayload,
     StateSummaryItem,
     SwingCityPayload,
+    TransitionDistributionPayload,
+    WaterfallTurnoverPayload,
 )
-from virada_eleitoral.export.geo_exporter import export_wasm_partitions
+from virada_eleitoral.export.geo_exporter import (
+    export_cartographic_payloads,
+    export_wasm_partitions,
+)
 from virada_eleitoral.export.json_exporter import export_static_json_payloads
 from virada_eleitoral.harvester.manifest import ManifestManager
 from virada_eleitoral.normalizer.pairing import pair_turnover_sections
@@ -41,7 +55,7 @@ console = Console()
 
 @app.command()
 def harvest(
-    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
     input_dir: Annotated[
         Path, typer.Option(help="Diretório contendo arquivos de BU brutos.")
     ] = Path("data/raw"),
@@ -49,7 +63,19 @@ def harvest(
         Path, typer.Option(help="Diretório de saída para os manifestos JSON.")
     ] = Path("data/raw"),
 ) -> None:
-    """Escaneia e registra arquivos de Boletins de Urna locais no manifesto de auditoria."""
+    """Escaneia e registra arquivos de Boletins de Urna locais no manifesto de auditoria.
+
+    Args:
+        ano: Ano da eleição a catalogar (padrão: 2026).
+        input_dir: Diretório onde os arquivos de BU brutos estão armazenados.
+        manifest_dir: Diretório onde o manifesto JSON de auditoria será gerado.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
     console.print(f"[bold blue]Iniciando varredura de BUs em:[/bold blue] {input_dir}")
     manifest_mgr = ManifestManager(manifest_dir)
     bu_files = sorted(input_dir.glob("bweb_*.zip")) + sorted(input_dir.glob("bweb_*.csv"))
@@ -260,13 +286,13 @@ def seed_sample(
         f"  - [bold]{p1}[/bold]\n"
         f"  - [bold]{p2}[/bold]\n"
         f"Agora você pode rodar o pipeline:\n"
-        f"  [bold cyan]uv run virada run-all --ano 2022 --uf ALL[/bold cyan]"
+        f"  [bold cyan]uv run virada run-all --ano 2026 --uf ALL[/bold cyan]"
     )
 
 
 @app.command()
 def normalize(
-    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
     uf: Annotated[str, typer.Option(help="Sigla da UF ou ALL para todas.")] = "ALL",
     raw_dir: Annotated[Path, typer.Option(help="Diretório de arquivos de BU brutos.")] = Path(
         "data/raw"
@@ -278,7 +304,7 @@ def normalize(
     """Filtra votos presidenciais, pivota candidatos e efetua o pareamento 1T x 2T.
 
     Args:
-        ano: Ano eleitoral analisado (padrão: 2022).
+        ano: Ano eleitoral analisado (padrão: 2026).
         uf: Sigla da UF ou ALL para processar todas as UFs disponíveis.
         raw_dir: Diretório onde os arquivos de BU brutos estão armazenados.
         processed_dir: Diretório de destino das partições Parquet Hive.
@@ -341,7 +367,7 @@ def normalize(
 
 @app.command()
 def consolidate(
-    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
     processed_dir: Annotated[
         Path, typer.Option(help="Diretório contendo as partições Parquet.")
     ] = Path("data/processed"),
@@ -352,7 +378,7 @@ def consolidate(
     """Consolida as partições Parquet no DuckDB e computa as visões analíticas OLAP.
 
     Args:
-        ano: Ano da eleição a consolidar.
+        ano: Ano da eleição a consolidar (padrão: 2026).
         processed_dir: Diretório onde as partições Parquet estão armazenadas.
         db_path: Caminho do arquivo DuckDB a ser criado ou atualizado.
 
@@ -385,7 +411,7 @@ def consolidate(
 
 @app.command()
 def export(
-    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
     db_path: Annotated[Path, typer.Option(help="Caminho do arquivo DuckDB.")] = Path(
         "data/virada_eleitoral.duckdb"
     ),
@@ -393,16 +419,31 @@ def export(
         Path, typer.Option(help="Diretório onde os payloads estáticos serão exportados.")
     ] = Path("data/export"),
 ) -> None:
-    """Extrai views analíticas do DuckDB e materializa arquivos JSON estáticos e Wasm."""
+    """Extrai views analíticas do DuckDB e materializa arquivos JSON estáticos e Wasm.
+
+    Args:
+        ano: Ano da eleição (padrão: 2026).
+        db_path: Caminho do arquivo de banco DuckDB consolidado.
+        out_dir: Diretório de destino dos artefatos estáticos.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
     console.print(f"[bold blue]Exportando dados analíticos para:[/bold blue] {out_dir}")
     consolidator = DuckDbConsolidator(db_path=db_path)
 
     files = export_static_json_payloads(consolidator, out_dir, ano=ano)
+    carto_files = export_cartographic_payloads(consolidator, out_dir, ano=ano)
     wasm_files = export_wasm_partitions(consolidator, out_dir / "wasm")
     consolidator.close()
 
+    total_json = len(files) + len(carto_files)
     console.print(
-        f"[green]Exportação concluída:[/green] {len(files)} payloads JSON e "
+        f"[green]Exportação concluída:[/green] {total_json} payloads JSON "
+        f"({len(files)} analíticos + {len(carto_files)} cartográficos) e "
         f"{len(wasm_files)} partições DuckDB-Wasm geradas."
     )
 
@@ -416,7 +457,18 @@ def verify(
         Path, typer.Option(help="Diretório de artefatos JSON para validação de schema.")
     ] = Path("data/export"),
 ) -> None:
-    """Executa a verificação pós-execução das 5 invariantes matemáticas e contratos JSON."""
+    """Executa a verificação pós-execução das 5 invariantes matemáticas e contratos JSON.
+
+    Args:
+        db_path: Caminho do banco DuckDB a auditar.
+        export_dir: Diretório de artefatos JSON para validação de schema.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
     console.print("[bold blue]Executando portão de verificação formal (DoD)...[/bold blue]")
 
     # 1. Validar invariantes matemáticas no DuckDB
@@ -429,7 +481,7 @@ def verify(
     )
     validate_dataframe_invariants(df_both)
 
-    # 2. Validar contratos JSON
+    # 2. Validar contratos JSON base
     with (export_dir / "summary_national.json").open("r", encoding="utf-8") as f:
         NationalSummaryPayload.model_validate(json.load(f))
 
@@ -443,6 +495,31 @@ def verify(
         for city_item in swing_list:
             SwingCityPayload.model_validate(city_item)
 
+    # 3. Validar contratos dos 4 Pilares Gráficos e invariantes avançadas
+    with (export_dir / "waterfall_turnover_balance.json").open("r", encoding="utf-8") as f:
+        waterfall_payload = WaterfallTurnoverPayload.model_validate(json.load(f))
+        validate_turnover_waterfall_invariants(waterfall_payload)
+
+    with (export_dir / "sankey_vote_flows.json").open("r", encoding="utf-8") as f:
+        SankeyVoteFlowsPayload.model_validate(json.load(f))
+
+    with (export_dir / "transition_distribution_groups.json").open("r", encoding="utf-8") as f:
+        transition_payload = TransitionDistributionPayload.model_validate(json.load(f))
+        validate_transition_matrix_invariants(transition_payload)
+
+    with (export_dir / "ecological_regression_scatter.json").open("r", encoding="utf-8") as f:
+        EcologicalRegressionScatterPayload.model_validate(json.load(f))
+
+    # 4. Validar contratos dos Pilares Cartográficos
+    with (export_dir / "states_deep_dive_southeast.json").open("r", encoding="utf-8") as f:
+        SoutheastDeepDivePayload.model_validate(json.load(f))
+
+    with (export_dir / "lula_advance_bubble_map.json").open("r", encoding="utf-8") as f:
+        LulaAdvanceBubbleMapPayload.model_validate(json.load(f))
+
+    with (export_dir / "flavio_performance_bubble_map.json").open("r", encoding="utf-8") as f:
+        FlavioPerformanceBubbleMapPayload.model_validate(json.load(f))
+
     consolidator.close()
 
     table = Table(title="Resultados do Portão de Verificação (DoD)")
@@ -454,6 +531,14 @@ def verify(
     table.add_row("Invariante 3: Conservação da Margem Líquida", "[bold green]PASS[/bold green]")
     table.add_row("Invariante 4: Idempotência das Agregações", "[bold green]PASS[/bold green]")
     table.add_row("Invariante 5: Classificação Determinística", "[bold green]PASS[/bold green]")
+    table.add_row(
+        "Invariante 6: Conservação de Saldo Líquido (Waterfall)", "[bold green]PASS[/bold green]"
+    )
+    table.add_row(
+        "Invariante 7: Conservação de Transição (Linhas = 100%)", "[bold green]PASS[/bold green]"
+    )
+    table.add_row("Os 4 Pilares Gráficos de Fluxo", "[bold green]PASS[/bold green]")
+    table.add_row("Os 4 Pilares Cartográficos Multinível", "[bold green]PASS[/bold green]")
     table.add_row("Contratos Pydantic v2 (JSON Export)", "[bold green]PASS[/bold green]")
     table.add_row("SLA de Orçamento DuckDB (< 150 MB)", "[bold green]PASS[/bold green]")
 
@@ -462,7 +547,7 @@ def verify(
 
 @app.command(name="run-all")
 def run_all(
-    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2022,
+    ano: Annotated[int, typer.Option(help="Ano da eleição.")] = 2026,
     uf: Annotated[str, typer.Option(help="Sigla da UF ou ALL.")] = "ALL",
     raw_dir: Annotated[Path, typer.Option(help="Diretório de dados brutos.")] = Path("data/raw"),
     processed_dir: Annotated[Path, typer.Option(help="Diretório de partições Parquet.")] = Path(
@@ -478,7 +563,7 @@ def run_all(
     """Orquestra sequencialmente: normalize -> consolidate -> export -> verify.
 
     Args:
-        ano: Ano eleitoral analisado (padrão: 2022).
+        ano: Ano eleitoral analisado (padrão: 2026).
         uf: Sigla da UF ou ALL para processar todas as UFs.
         raw_dir: Diretório de dados brutos onde os BUs estão armazenados.
         processed_dir: Diretório das partições Parquet geradas.
@@ -502,7 +587,7 @@ def run_all(
             "das 10 fixtures áureas, gere os arquivos de demonstração com:\n"
             "  [bold yellow]uv run virada seed-sample[/bold yellow]\n"
             "E em seguida execute o pipeline novamente:\n"
-            "  [bold yellow]uv run virada run-all --ano 2022 --uf ALL[/bold yellow]\n"
+            "  [bold yellow]uv run virada run-all --ano 2026 --uf ALL[/bold yellow]\n"
         )
         raise typer.Exit(code=1)
 
