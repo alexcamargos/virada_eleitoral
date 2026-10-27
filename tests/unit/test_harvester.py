@@ -350,3 +350,95 @@ async def test_remote_tse_bu_provider_retries_exhausted(
             uf="DF",
         )
     assert "Falha ao baixar" in str(exc_info.value)
+
+
+def test_remote_tse_bu_provider_fetch_dataset_catalog_ckan_success(
+    tmp_path: Path, mocker: MockerFixture
+) -> None:
+    """Verifica consulta de catálogo à API CKAN do TSE com extração de BUs e hashes."""
+    mock_client = mocker.MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "result": {
+            "resources": [
+                {
+                    "name": "SP - Boletim de Urna - 1T",
+                    "url": "https://dadosabertos.tse.jus.br/dataset/bweb_1t_SP.zip",
+                },
+                {
+                    "name": "SP - Hash SHA-512 - 1T",
+                    "url": "https://dadosabertos.tse.jus.br/dataset/bweb_1t_SP.zip.sha512",
+                },
+            ]
+        }
+    }
+    mock_client.get.return_value = mock_resp
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    provider = RemoteTseBuProvider()
+    catalog = provider.fetch_dataset_catalog(ano=2026, cache_dir=tmp_path)
+
+    assert ("SP", 1) in catalog
+    bu_url, hash_url = catalog[("SP", 1)]
+    assert bu_url == "https://dadosabertos.tse.jus.br/dataset/bweb_1t_SP.zip"
+    assert hash_url == "https://dadosabertos.tse.jus.br/dataset/bweb_1t_SP.zip.sha512"
+
+    # Segunda chamada deve usar o cache em disco
+    cached_catalog = provider.fetch_dataset_catalog(ano=2026, cache_dir=tmp_path)
+    assert ("SP", 1) in cached_catalog
+
+
+def test_remote_tse_bu_provider_fetch_dataset_catalog_fallback(mocker: MockerFixture) -> None:
+    """Verifica fallback determinístico quando CKAN retorna 429."""
+    mock_client = mocker.MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 429
+    mock_client.get.return_value = mock_resp
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    provider = RemoteTseBuProvider(max_retries=1)
+    catalog = provider.fetch_dataset_catalog(ano=2026)
+    assert len(catalog) > 0
+    assert ("SP", 1) in catalog
+    assert ("AC", 1) in catalog
+
+
+def test_remote_tse_bu_provider_fetch_dataset_catalog_unsupported_year(
+    mocker: MockerFixture,
+) -> None:
+    """Garante que ano sem fallback canônico levanta HarvesterError em falha de API."""
+    mock_client = mocker.MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 500
+    mock_client.get.return_value = mock_resp
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    provider = RemoteTseBuProvider(max_retries=1)
+    with pytest.raises(HarvesterError, match="sem fallback"):
+        provider.fetch_dataset_catalog(ano=1990)
+
+
+def test_remote_tse_bu_provider_fetch_expected_sha512(mocker: MockerFixture) -> None:
+    """Verifica obtenção do hash SHA-512 oficial da URL e tratamento de erro."""
+    mock_client = mocker.MagicMock()
+    mock_client.__enter__.return_value = mock_client
+    mock_resp = mocker.MagicMock()
+    mock_resp.status_code = 200
+    expected_hash = "a" * 128
+    mock_resp.text = f"{expected_hash}  bweb_1t_SP.zip\n"
+    mock_client.get.return_value = mock_resp
+    mocker.patch("httpx.Client", return_value=mock_client)
+
+    provider = RemoteTseBuProvider()
+    res = provider.fetch_expected_sha512("https://cdn.tse.jus.br/bu.sha512")
+    assert res == expected_hash
+
+    # Erro de rede
+    mock_resp.status_code = 404
+    res_none = provider.fetch_expected_sha512("https://cdn.tse.jus.br/notfound.sha512")
+    assert res_none is None
+
