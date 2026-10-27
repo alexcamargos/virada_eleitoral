@@ -1,9 +1,21 @@
 # SPECS.MD: Especificação Técnica Mestra e Arquitetura do Sistema
 
 ## 1. Escopo, Objetivos e Matriz de Requisitos
-Construir uma infraestrutura analítica de alta performance, auditável, reproduzível, multiplataforma (Windows/Linux/macOS) e baseada em processamento streaming para analisar os Boletins de Urna (BUs) de ambos os turnos das Eleições Presidenciais brasileiras (com foco primário nas Eleições Gerais de 2022 — ~470.000 a 500.000 seções eleitorais e mais de 40 milhões de linhas de registros brutos).
 
-O objetivo central é quantificar a dinâmica da virada eleitoral entre turnos, identificando formalmente a geografia da reversão de votos a favor do candidato Luiz Inácio Lula da Silva frente ao seu oponente (Jair Bolsonaro), a absorção de votos de terceiros colocados e abstenções, consolidando resultados nos três níveis hierárquicos: Nacional/UF, Município e Seção Eleitoral.
+> [!IMPORTANT]
+> **ESCOPO ELEITORAL ÚNICO, MANDATÓRIO E VINCULANTE (ELEIÇÕES 2026):**
+> O sistema `virada_eleitoral` destina-se **exclusivamente à análise da Eleição Presidencial de 2026**, com foco soberano no **2º Turno ocorrido em 25/10/2026**, disputado entre os candidatos **Luiz Inácio Lula da Silva** (PT, 13) e **Flávio Bolsonaro** (PL, 22).
+> Qualquer agente de IA ou desenvolvedor deve rejeitar premissas relativas a outros pleitos (como 2022). O ano de referência obrigatório de todo o pipeline, banco de dados, CLI e testes é `2026`.
+
+Construir uma infraestrutura analítica de alta performance, auditável, reproduzível, multiplataforma (Windows/Linux/macOS) e baseada em processamento streaming para analisar os Boletins de Urna (BUs) de ambos os turnos das Eleições Presidenciais de 2026 (~470.000 a 500.000 seções eleitorais e mais de 40 milhões de linhas de registros brutos).
+
+O objetivo central e primordial do projeto é quantificar determinística e matematicamente **como o candidato Luiz Inácio Lula da Silva construiu seu total de votos finais no 2º turno (25/10/2026)** em relação ao 1º turno, respondendo à pergunta fundamental: *de onde vieram os votos que Lula não tinha no primeiro turno?*
+A decomposição contábil e estatística investiga exaustivamente:
+1. Absorção de votos de eleitores de terceiros candidatos do 1º turno.
+2. Absorção de eleitores que votaram em branco no 1º turno.
+3. Absorção de eleitores que votaram nulo no 1º turno.
+4. Absorção de novos eleitores decorrentes de variação no comparecimento / reversão de abstenções ($\Delta \text{Comparecimento}$).
+5. Variação e virada frente ao seu oponente direto, **Flávio Bolsonaro** (22), consolidando resultados nos três níveis hierárquicos: Nacional/UF, Município e Seção Eleitoral.
 
 ---
 
@@ -11,17 +23,17 @@ O objetivo central é quantificar a dinâmica da virada eleitoral entre turnos, 
 
 | ID | Domínio | Requisito Resumido | Especificação Detalhada |
 | :--- | :--- | :--- | :--- |
-| `REQ-HARV-01` | Ingestão / Coleta | Obtenção streaming e gerência de pacotes de Boletins de Urna (`bweb_1t_*.csv` e `bweb_2t_*.csv`) do Portal de Dados Abertos do TSE via download resiliente ou cache local. | [`specs/01-harvesting-and-manifest.md`](./specs/01-harvesting-and-manifest.md) |
-| `REQ-HARV-02` | Integridade | Validação criptográfica de integridade de arquivo (`SHA-512`), controle de idempotência e manifesto formal de artefatos processados. | [`specs/01-harvesting-and-manifest.md`](./specs/01-harvesting-and-manifest.md) |
-| `REQ-NORM-01` | Normalização | Filtragem estrita do cargo Presidente (`CD_CARGO == 1`), pivotagem colunar de candidatos e enriquecimento com tabela De-Para TSE/IBGE de 7 dígitos. | [`specs/02-normalization-and-pairing.md`](./specs/02-normalization-and-pairing.md) |
-| `REQ-NORM-02` | Pareamento | Algoritmo de `FULL OUTER JOIN` sobre a chave canônica `(SG_UF, CD_MUNICIPIO, NR_ZONA, NR_SECAO)` entre 1º e 2º turnos sem distorção estatística. | [`specs/02-normalization-and-pairing.md`](./specs/02-normalization-and-pairing.md) |
+| `REQ-HARV-01` | Ingestão / Coleta | Obtenção streaming e gerência de pacotes de Boletins de Urna das Eleições 2026 (`bweb_1t_*.csv` e `bweb_2t_*.csv`) via download resiliente ou cache local. | [`specs/01-harvesting-and-manifest.md`](./specs/01-harvesting-and-manifest.md) |
+| `REQ-HARV-02` | Integridade | Validação criptográfica de integridade de arquivo (`SHA-512`), controle de idempotência e manifesto formal de artefatos processados de 2026. | [`specs/01-harvesting-and-manifest.md`](./specs/01-harvesting-and-manifest.md) |
+| `REQ-NORM-01` | Normalização | Filtragem estrita do cargo Presidente (`CD_CARGO == 1`), pivotagem de votos de Lula (13), Flávio Bolsonaro (22), terceiros, brancos e nulos e De-Para IBGE. | [`specs/02-normalization-and-pairing.md`](./specs/02-normalization-and-pairing.md) |
+| `REQ-NORM-02` | Pareamento | Algoritmo de `FULL OUTER JOIN` sobre a chave canônica `(SG_UF, CD_MUNICIPIO, NR_ZONA, NR_SECAO)` entre 1º e 2º turnos (25/10/2026) sem distorção estatística. | [`specs/02-normalization-and-pairing.md`](./specs/02-normalization-and-pairing.md) |
 | `REQ-NORM-03` | Auditoria de Seções | Detecção e rastreabilidade integral de urnas de contingência, agregadas ou ausentes em um dos turnos gravadas em `unpaired_sections_audit`. | [`specs/02-normalization-and-pairing.md`](./specs/02-normalization-and-pairing.md) |
 | `REQ-ANAL-01` | Armazenamento | Persistência colunar em Parquet particionado (`ZSTD`) e consolidação idempotente em banco analítico DuckDB (`<= 150 MB`). | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
-| `REQ-ANAL-02` | Fórmulas Analíticas | Cálculo exato de deltas nominais, deltas em pontos percentuais (`pp`), margem líquida e classificação categórica quádrupla de virada. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
-| `REQ-ANAL-03` | Migração de Votos | Modelagem da absorção de votos de terceiros colocados (Simone Tebet, Ciro Gomes, outros), brancos, nulos e abstenções do 1T para o 2T. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
-| `REQ-EXPO-01` | Contratos JSON | Exportação determinística de payloads JSON estáticos validados por modelos Pydantic v2 para consumo em visualizadores web. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
-| `REQ-EXPO-02` | Cartografia IBGE | Cruzamento geográfico e fusão com malha territorial IBGE (GeoJSON/TopoJSON simplificado) para mapas temáticos de calor e virada. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
-| `REQ-QA-01` | Qualidade / SDD | Suíte de testes `pytest` cobrindo 10 fixtures áureas (`FX-01` a `FX-10`), testes de invariantes e CLI unificada (`virada`). | [`specs/05-testing-fixtures-and-roadmap.md`](./specs/05-testing-fixtures-and-roadmap.md) |
+| `REQ-ANAL-02` | Fórmulas Analíticas | Cálculo exato de deltas nominais, deltas em pontos percentuais (`pp`), margem líquida e classificação categórica quádrupla de virada (Lula vs. Flávio Bolsonaro). | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
+| `REQ-ANAL-03` | Decomposição e Migração | Modelagem exaustiva da construção dos votos de Lula no 2T: quantificação de absorção de terceiros candidatos, brancos, nulos e novos comparecentes. | [`specs/03-analytics-and-turnover-metrics.md`](./specs/03-analytics-and-turnover-metrics.md) |
+| `REQ-EXPO-01` | Contratos JSON & Sankey | Exportação determinística de payloads JSON estáticos (resumos, cidades pêndulo e matriz/fluxo de migração Sankey) validados por Pydantic v2. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
+| `REQ-EXPO-02` | Cartografia IBGE | Cruzamento geográfico e fusão com malha territorial IBGE (GeoJSON/TopoJSON simplificado) para mapas temáticos de calor e virada de 2026. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
+| `REQ-QA-01` | Qualidade / SDD | Suíte de testes `pytest` cobrindo 10 fixtures áureas (`FX-01` a `FX-10`), testes de invariantes e CLI unificada (`virada`) com `--ano 2026`. | [`specs/05-testing-fixtures-and-roadmap.md`](./specs/05-testing-fixtures-and-roadmap.md) |
 
 ---
 
@@ -58,24 +70,27 @@ Para cada entidade territorial (Seção, Município, UF ou Brasil) e turnos $T \
    $$\Delta M = M_{2T} - M_{1T}$$
 
 6. **Classificação Categórica do Resultado:**
-   Avaliada comparando os votos do candidato Lula (13) frente ao adversário (22) em cada turno:
-   - **`VIRADA_LULA`:** $\text{Votos}_{13, 1T} < \text{Votos}_{\text{Adv}, 1T}$ E $\text{Votos}_{13, 2T} > \text{Votos}_{\text{Adv}, 2T}$.
-   - **`VIRADA_ADVERSARIO`:** $\text{Votos}_{13, 1T} > \text{Votos}_{\text{Adv}, 1T}$ E $\text{Votos}_{13, 2T} < \text{Votos}_{\text{Adv}, 2T}$.
-   - **`MANTEVE_LIDERANCA`:** $\text{Votos}_{13, 1T} > \text{Votos}_{\text{Adv}, 1T}$ E $\text{Votos}_{13, 2T} > \text{Votos}_{\text{Adv}, 2T}$.
-   - **`MANTEVE_DESVANTAGEM`:** $\text{Votos}_{13, 1T} < \text{Votos}_{\text{Adv}, 1T}$ E $\text{Votos}_{13, 2T} < \text{Votos}_{\text{Adv}, 2T}$.
-   - *(Em empates exatos $\text{Votos}_{13} == \text{Votos}_{\text{Adv}}$, registra-se `EMPATE_1T` ou `EMPATE_2T`).*
+   Avaliada comparando os votos do candidato Lula (13) frente ao adversário Flávio Bolsonaro (22) em cada turno:
+   - **`VIRADA_LULA`:** $\text{Votos}_{13, 1T} < \text{Votos}_{22, 1T}$ E $\text{Votos}_{13, 2T} > \text{Votos}_{22, 2T}$.
+   - **`VIRADA_ADVERSARIO`:** $\text{Votos}_{13, 1T} > \text{Votos}_{22, 1T}$ E $\text{Votos}_{13, 2T} < \text{Votos}_{22, 2T}$.
+   - **`MANTEVE_LIDERANCA`:** $\text{Votos}_{13, 1T} > \text{Votos}_{22, 1T}$ E $\text{Votos}_{13, 2T} > \text{Votos}_{22, 2T}$.
+   - **`MANTEVE_DESVANTAGEM`:** $\text{Votos}_{13, 1T} < \text{Votos}_{22, 1T}$ E $\text{Votos}_{13, 2T} < \text{Votos}_{22, 2T}$.
+   - *(Em empates exatos $\text{Votos}_{13} == \text{Votos}_{22}$, registra-se `EMPATE_1T` ou `EMPATE_2T`).*
 
-7. **Taxa de Absorção de Terceiros Candidatos e Abstenções:**
-   - Em cada município/seção, quantifica-se a disponibilidade de votos de 3ºs colocados no 1T:
-     $$\text{Pool}_{\text{Disponível}} = \text{Votos}_{\text{Outros}, 1T} + \Delta \text{Comparecimento}$$
-   - Eficiência de Atração de Lula:
-     $$\text{Eficiência}_{13} = \frac{\Delta \text{Votos}_{13}}{\max(1, \text{Votos}_{\text{Outros}, 1T})}$$
+7. **Decomposição Analítica da Construção dos Votos de Lula no 2º Turno:**
+   - Para explicar matematicamente como Lula totalizou seus votos no 2º turno, decompõe-se o ganho líquido de votos ($\Delta \text{Votos}_{13}$) em relação ao reservatório potencial de votos disponíveis do 1T:
+     $$\text{Pool}_{\text{Disponível}} = \text{Votos}_{\text{Outros}, 1T} + \Delta \text{Brancos} + \Delta \text{Nulos} + \max(0, \Delta \text{Comparecimento})$$
+     onde:
+     - $\Delta \text{Brancos} = \max(0, \text{Votos}_{\text{Brancos}, 1T} - \text{Votos}_{\text{Brancos}, 2T})$ (votos em branco convertidos em votos nominais).
+     - $\Delta \text{Nulos} = \max(0, \text{Votos}_{\text{Nulos}, 1T} - \text{Votos}_{\text{Nulos}, 2T})$ (votos nulos convertidos em votos nominais).
+     - $\Delta \text{Comparecimento} = \text{Comparecimento}_{2T} - \text{Comparecimento}_{1T}$ (eleitores ausentes no 1T que compareceram às urnas no 25/10/2026).
+   - A modelagem quantifica a contribuição relativa de cada uma dessas quatro fontes para o total final $\text{Votos}_{13, 2T}$, alimentando o diagrama de fluxo Sankey/Waterfall.
 
 ---
 
 ## 3. Insumos Primários dos Boletins de Urna (TSE)
 
-Os dados provêm dos arquivos oficiais de votação nominal por seção do TSE (`bweb_1t_{UF}_*.csv` e `bweb_2t_{UF}_*.csv`), contendo codificação `ISO-8859-1` e separador `;`:
+Os dados provêm dos arquivos oficiais de votação nominal por seção do TSE para as Eleições Presidenciais de 2026 (`bweb_1t_{UF}_*.csv` e `bweb_2t_{UF}_*.csv`), contendo codificação `ISO-8859-1` e separador `;`:
 
 | Coluna Original TSE | Tipo de Dado | Descrição e Uso no Pipeline |
 | :--- | :--- | :--- |
@@ -85,7 +100,7 @@ Os dados provêm dos arquivos oficiais de votação nominal por seção do TSE (
 | `NR_ZONA` | `SMALLINT` | Número da Zona Eleitoral. |
 | `NR_SECAO` | `SMALLINT` | Número da Seção Eleitoral. |
 | `CD_CARGO` | `TINYINT` | Código do cargo em disputa (`1` = Presidente). |
-| `NR_VOTAVEL` | `INTEGER` | Número do candidato (`13` Lula, `22` Bolsonaro, outros, `95` Branco, `96` Nulo). |
+| `NR_VOTAVEL` | `INTEGER` | Número do candidato (`13` Lula, `22` Flávio Bolsonaro, outros, `95` Branco, `96` Nulo). |
 | `QT_VOTOS` | `INTEGER` | Quantidade de votos apurados naquela linha. |
 | `QT_APTOS` | `INTEGER` | Quantidade de eleitores aptos na seção. |
 | `QT_COMPARECIMENTO`| `INTEGER` | Total de eleitores que compareceram à urna. |
