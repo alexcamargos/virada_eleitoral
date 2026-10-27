@@ -25,7 +25,7 @@ A missão primordial do sistema é processar e parear de ponta a ponta mais de *
   1. *Mapa Coroplético Estadual (Macro / UFs e DF):* Vencedor e margem por estado (Lula vermelho vs Flávio azul).
   2. *Mapa Coroplético de Alta Resolução Municipal (Meso / 5.570 Cidades):* Detecção de viradas (*swing cities*) com card comparativo de 1T e 2T (ex.: Nanuque/MG).
   3. *Painel Comparativo dos Grandes Colégios (Deep-Dive Sudeste SP, RJ e MG):* Comparações espaciais lado a lado de 1T vs 2T e barras comprovando avanço de Lula superando o de Flávio.
-  4. *Mapa de Bolhas Proporcionais de Avanço de Lula Ponderado pelo Eleitorado:* Círculos proporcionais aos aptos com gradiente contínuo de $\Delta PP$ e callouts das principais capitais.
+  4. *Díptico Cartográfico de Desempenho Ponderado (Mapas Espelhados Lula vs Flávio):* Círculos proporcionais aos aptos contrastando o avanço de Lula (escala contínua) com o desempenho de Flávio (escala divergente com identificação de recuos).
 - **Rollup Hierárquico Multinível:** Agregação estrita sem distorção em três níveis territoriais:
   1. **Nível Macro (Nacional e UF):** Contribuição de cada estado e região para a margem líquida final.
   2. **Nível Meso (Município):** Identificação de cidades pêndulo (*swing cities*), reversões de liderança e enriquecimento com código IBGE de 7 dígitos.
@@ -154,7 +154,7 @@ virada_eleitoral/
     1. `ufs_virada.topojson` e `summary_uf.json` (Mapa macro de UFs com vencedor no 2T).
     2. `municipios_virada.topojson` e `swing_cities.json` (Mapa meso de 5.570 cidades com viradas e cards 1T x 2T).
     3. `states_deep_dive_southeast.json` (Painel comparativo lado a lado de SP, RJ e MG).
-    4. `lula_advance_bubble_map.json` (Mapa de bolhas proporcionais ao eleitorado ponderadas por $\Delta PP$).
+    4. `lula_advance_bubble_map.json` e `flavio_performance_bubble_map.json` (Díptico de bolhas proporcionais contrastando avanço de Lula vs desempenho de Flávio).
   - Exportação opcional de partições Parquet leves para permitir consultas interativas no navegador via DuckDB-Wasm.
 
 ### 4.5. Agent Card: QA, Invariants & Fixture Verifier (`agent-qa-verifier`)

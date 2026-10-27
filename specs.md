@@ -87,11 +87,28 @@ Integrado e compondo a entrega mínima do produto, o sistema disponibiliza uma s
      * *Minas Gerais:* Lula cresceu +1.043.413 votos (5,18 mi -> 6,23 mi) vs Flávio +554.045 (5,77 mi -> 6,33 mi).
      * *Rio de Janeiro:* Lula cresceu +872.265 votos (3,69 mi -> 4,56 mi) vs Flávio +202.058 (4,96 mi -> 5,16 mi).
 
-4. **Geo-Pilar 4: Mapa de Bolhas Proporcionais de Avanço de Lula ($\Delta PP$ Ponderado pelo Eleitorado):**
-   - **Objetivo:** Evidenciar visualmente onde ocorreu a maior intensidade de migração de votos para Lula no território nacional.
-   - **Estrutura:** Círculos proporcionais ao eleitorado apto municipal com preenchimento em escala cromática contínua (de 0 pp / estável até $\ge +10\text{ pp}$ / maior avanço relativo).
-   - **Destaque das Capitais Estratégicas:** Callouts georreferenciados para as principais metrópoles:
-     * São Paulo (+8,9 pp), Salvador (+8,0 pp), Belo Horizonte (+7,8 pp), Rio de Janeiro (+7,6 pp), Brasília (+7,6 pp), Curitiba (+7,3 pp), Porto Alegre (+7,3 pp), Belém (+7,0 pp), Manaus (+7,0 pp), Fortaleza (+6,6 pp), Recife (+6,0 pp).
+4. **Geo-Pilar 4: Díptico Cartográfico de Desempenho Ponderado (Mapas Espelhados Lula vs. Flávio):**
+   - **Objetivo:** Confrontar espacialmente o ganho relativo em pontos percentuais dos votos válidos de ambos os candidatos no território nacional, evidenciando onde cada um avançou, estagnou ou recuou.
+   - **4A. Mapa de Avanço de Lula ($\Delta PP_{\text{Lula}}$):**
+     * Círculos proporcionais ao eleitorado apto ($\text{raio} \propto \sqrt{\text{aptos}}$).
+     * Escala cromática contínua sequencial (de 0 pp / estável até $\ge +10\text{ pp}$ / maior avanço e migração de votos).
+   - **4B. Mapa de Desempenho de Flávio ($\Delta PP_{\text{Flávio}}$):**
+     * Círculos proporcionais ao eleitorado apto com escala cromática divergente bipolar:
+       - Azul: Avanço de Flávio ($0\text{ pp}$ a $\ge +6\text{ pp}$, com picos no Sul e Centro-Oeste).
+       - Vermelho: Recuo de Flávio ($-3\text{ pp}$ a $0\text{ pp}$, com perdas em cidades do Nordeste e capitais).
+   - **4C. Contraste Analítico das Metrópoles Estratégicas:**
+     Apresentação em callouts comparativos das capitais, comprovando que o crescimento percentual de Lula superou em múltiplas vezes o de Flávio Bolsonaro nos grandes centros:
+     * *São Paulo:* Lula **+8,9 pp** vs Flávio **+2,4 pp** (Lula avançou 3,7x mais)
+     * *Rio de Janeiro:* Lula **+7,6 pp** vs Flávio **+0,6 pp** (Lula avançou 12,6x mais)
+     * *Belo Horizonte:* Lula **+7,8 pp** vs Flávio **+2,5 pp** (Lula avançou 3,1x mais)
+     * *Salvador:* Lula **+8,0 pp** vs Flávio **-0,3 pp** (Flávio registrou recuo líquido)
+     * *Brasília:* Lula **+7,6 pp** vs Flávio **+3,0 pp** (Lula avançou 2,5x mais)
+     * *Curitiba:* Lula **+7,3 pp** vs Flávio **+4,8 pp**
+     * *Porto Alegre:* Lula **+7,3 pp** vs Flávio **+2,3 pp** (Lula avançou 3,1x mais)
+     * *Belém:* Lula **+7,0 pp** vs Flávio **+1,3 pp** (Lula avançou 5,4x mais)
+     * *Manaus:* Lula **+7,0 pp** vs Flávio **+1,6 pp** (Lula avançou 4,4x mais)
+     * *Fortaleza:* Lula **+6,6 pp** vs Flávio **+0,6 pp** (Lula avançou 11x mais)
+     * *Recife:* Lula **+6,0 pp** vs Flávio **+0,4 pp** (Lula avançou 15x mais)
 
 ---
 
