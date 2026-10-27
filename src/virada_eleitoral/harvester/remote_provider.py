@@ -58,6 +58,11 @@ CANONICAL_BU_TIMESTAMP_MAP: dict[int, dict[int, str]] = {
     2026: {1: "051020261403"},
 }
 
+# URL oficial do TSE com dados consolidados de votação por seção para Presidente em 2026
+NATIONAL_BU_PRESIDENTE_URL_2026 = (
+    "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_BR.zip"
+)
+
 
 class RemoteTseBuProvider:
     """Provedor para obtenção assíncrona de arquivos de BU diretamente dos servidores do TSE."""
@@ -302,3 +307,29 @@ class RemoteTseBuProvider:
         raise HarvesterError(
             f"Falha ao baixar '{url}' após {self.max_retries} tentativas. Causa: {last_error}"
         ) from last_error
+
+    async def download_national_bu_dataset(
+        self,
+        dest_dir: Path,
+        ano: int = 2026,
+    ) -> RawBuFileBundle:
+        """Efetua o download do arquivo consolidado oficial do TSE de votação por seção.
+
+        Args:
+            dest_dir: Diretório de destino final no disco local.
+            ano: Ano da eleição (padrão: 2026).
+
+        Returns:
+            RawBuFileBundle: Contrato preenchido com o arquivo nacional baixado e validado.
+
+        Raises:
+            HarvesterError: Em caso de falha de rede ou esgotamento de retries.
+        """
+        url = NATIONAL_BU_PRESIDENTE_URL_2026
+        return await self.download_bu_file(
+            url=url,
+            dest_dir=dest_dir,
+            ano=ano,
+            turno=0,
+            uf="BR",
+        )

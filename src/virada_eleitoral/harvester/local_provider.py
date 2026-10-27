@@ -174,3 +174,90 @@ class LocalBuProvider:
             file_size_bytes=file_size,
             is_compressed=is_zip,
         )
+
+    def unpack_national_dataset_if_present(self, ano: int = 2026) -> int:
+        """Extrai e particiona o arquivo nacional de votação por seção em CSVs de BU por UF.
+
+        Caso raw_dir contenha o ZIP nacional ou CSV extraído correspondente,
+        descompacta e divide via DuckDB em 'bweb_1t_{UF}_{ano}.csv' e 'bweb_2t_{UF}_{ano}.csv'.
+
+        Args:
+            ano: Ano da eleição a processar (padrão: 2026).
+
+        Returns:
+            int: Quantidade de arquivos de UF gerados ou 0 caso não aplicável.
+
+        Raises:
+            None: Falhas são tratadas graciosamente retornando 0.
+        """
+        import duckdb
+
+        national_zip = self.raw_dir / f"votacao_secao_{ano}_BR.zip"
+        extracted_dir = self.raw_dir / "extracted"
+        extracted_csv = extracted_dir / f"votacao_secao_{ano}_BR.csv"
+
+        if not extracted_csv.exists() and national_zip.exists():
+            try:
+                self.extract_csv_from_zip(national_zip, extracted_dir)
+            except Exception:
+                return 0
+
+        if not extracted_csv.exists():
+            return 0
+
+        csv_str = str(extracted_csv).replace("\\", "/")
+        generated_count = 0
+
+        try:
+            conn = duckdb.connect(":memory:")
+            conn.execute(
+                f"""
+                CREATE OR REPLACE TABLE bu_pres_all AS
+                SELECT
+                    sg_uf AS SG_UF,
+                    cd_municipio AS CD_MUNICIPIO,
+                    nm_municipio AS NM_MUNICIPIO,
+                    nr_zona AS NR_ZONA,
+                    nr_secao AS NR_SECAO,
+                    cd_cargo AS CD_CARGO,
+                    nr_votavel AS NR_VOTAVEL,
+                    qt_votos AS QT_VOTOS,
+                    0 AS QT_APTOS,
+                    0 AS QT_COMPARECIMENTO,
+                    0 AS QT_ABSTENCAO,
+                    sg_uf,
+                    nr_turno
+                FROM read_csv('{csv_str}', delim=';', header=true, encoding='iso-8859-1')
+                WHERE cd_cargo = 1;
+                """
+            )
+            ufs = [
+                row[0]
+                for row in conn.execute(
+                    "SELECT DISTINCT sg_uf FROM bu_pres_all ORDER BY sg_uf"
+                ).fetchall()
+            ]
+
+            for uf in ufs:
+                for turno in (1, 2):
+                    out_file = self.raw_dir / f"bweb_{turno}t_{uf}_{ano}.csv"
+                    if not out_file.exists():
+                        out_str = str(out_file).replace("\\", "/")
+                        conn.execute(
+                            f"""
+                            COPY (
+                                SELECT
+                                    SG_UF, CD_MUNICIPIO, NM_MUNICIPIO, NR_ZONA, NR_SECAO,
+                                    CD_CARGO, NR_VOTAVEL, QT_VOTOS, QT_APTOS,
+                                    QT_COMPARECIMENTO, QT_ABSTENCAO
+                                FROM bu_pres_all
+                                WHERE sg_uf = '{uf}' AND nr_turno = {turno}
+                            ) TO '{out_str}' (HEADER, DELIMITER ';');
+                            """
+                        )
+                        generated_count += 1
+            conn.close()
+        except Exception:
+            return 0
+
+        return generated_count
