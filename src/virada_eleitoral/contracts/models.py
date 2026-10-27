@@ -264,3 +264,166 @@ class SwingCityPayload(BaseModel):
     delta_pp_lula: float
     delta_margem: int
     status_virada_municipio: TurnoverClassification
+
+
+# ==============================================================================
+# Modelos Pydantic v2 dos 4 Pilares Gráficos de Fluxo (REQ-EXPO-01)
+# ==============================================================================
+
+
+class WaterfallStepItem(BaseModel):
+    """Degrau individual na decomposição em cascata do saldo líquido de virada.
+
+    Representa a contribuição líquida (Lula - Flávio) de um grupo eleitoral de origem.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    grupo: str
+    saldo_liquido: float
+    favorece: str = "Lula"
+    votos_para_lula: float | None = None
+    votos_para_flavio: float | None = None
+    descricao: str | None = None
+
+
+class WaterfallTurnoverPayload(BaseModel):
+    """Payload do Pilar 1: Gráfico em Cascata da Virada (Waterfall de Saldo Líquido).
+
+    Decompõe como a desvantagem do 1T virou vitória no 2T em milhões de votos.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    metodologia: str = "Estimativa por inferência ecológica ponderada sobre as seções do TSE"
+    unidade: str = "milhoes_de_votos"
+    diferenca_1t: float
+    rotulo_1t: str
+    degraus: list[WaterfallStepItem]
+    diferenca_2t: float
+    rotulo_2t: str
+
+
+class SankeyNodeItem(BaseModel):
+    """Nó do grafo aluvial de migração de votos."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    label: str
+    total: float
+
+
+class SankeyLinkItem(BaseModel):
+    """Fluxo direcional entre grupos eleitorais do 1T e destinos do 2T."""
+
+    model_config = ConfigDict(frozen=True)
+
+    source: str
+    target: str
+    value: float = Field(..., ge=0.0)
+
+
+class SankeyVoteFlowsPayload(BaseModel):
+    """Payload do Pilar 2: Diagrama de Fluxo Aluvial / Sankey de Migração de Votos.
+
+    Mapeia os fluxos em milhões de eleitores entre os grupos do 1T e os destinos do 2T.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    metrica: str = "milhoes_de_eleitores"
+    total_novos_votos_lula: float
+    total_novos_votos_flavio: float
+    nodes: list[SankeyNodeItem]
+    links: list[SankeyLinkItem]
+
+
+class SubcandidateItem(BaseModel):
+    """Distribuição de votos para um subcandidato específico do 1T."""
+
+    model_config = ConfigDict(frozen=True)
+
+    nome: str
+    total: int
+    distribuicao_pct: dict[str, float]
+
+
+class TransitionGroupItem(BaseModel):
+    """Grupo eleitoral de origem no 1T com distribuição percentual e nominal no 2T."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    nome: str
+    total_eleitores: int
+    distribuicao_percentual: dict[str, float]
+    distribuicao_nominal: dict[str, int]
+    pct_do_pool_ausentes_1t: float | None = None
+    subcandidatos: list[SubcandidateItem] | None = None
+
+
+class TransitionDistributionPayload(BaseModel):
+    """Payload do Pilar 3: Matriz de Destino em Barras 100% Empilhadas.
+
+    Apresenta a destinação dos eleitores de terceiros candidatos, brancos/nulos e ausentes.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    grupos: list[TransitionGroupItem]
+
+
+class ScatterPointItem(BaseModel):
+    """Ponto amostral de seção eleitoral para o gráfico de dispersão."""
+
+    model_config = ConfigDict(frozen=True)
+
+    sg_uf: str = Field(..., min_length=2, max_length=2)
+    nr_secao: int
+    x_pct_branco_nulo: float
+    y_delta_pp_lula: float
+    aptos: int = Field(..., gt=0)
+
+
+class AxisRangeItem(BaseModel):
+    """Configuração e limites de um eixo no gráfico de dispersão."""
+
+    model_config = ConfigDict(frozen=True)
+
+    nome: str
+    min: float
+    max: float
+
+
+class RegressionMetaItem(BaseModel):
+    """Parâmetros estatísticos da regressão linear ponderada (WLS)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    coeficiente_angular_beta: float
+    intercepto_alpha: float
+    r_quadrado: float = Field(..., ge=0.0, le=1.0)
+    chamada_destaque: str
+    total_secoes_modelo: int
+    secoes_amostra_visualizacao: int
+
+
+class EcologicalRegressionScatterPayload(BaseModel):
+    """Payload do Pilar 4: Dispersão e Regressão Linear Seção a Seção (Scatter Plot).
+
+    Relaciona o percentual de brancos/nulos no 1T com o avanço de Lula no 2T.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    titulo: str
+    eixo_x: AxisRangeItem
+    eixo_y: AxisRangeItem
+    regressao: RegressionMetaItem
+    pontos_amostra: list[ScatterPointItem]
+
