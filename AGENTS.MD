@@ -21,6 +21,11 @@ A missão primordial do sistema é processar e parear de ponta a ponta mais de *
   2. *Diagrama de Fluxo Aluvial / Sankey:* Mapeamento bruto dos fluxos de votos migrados de cada grupo do 1T para os destinos do 2T.
   3. *Matriz de Destino em Barras Horizontais Empilhadas (100% Stacked Bar):* Decomposição percentual e nominal para onde foram os eleitores de terceiros candidatos, brancos/nulos e ausentes.
   4. *Dispersão e Regressão Linear Seção a Seção (Scatter Plot):* Evidência empírica da sensibilidade do crescimento de Lula em função da densidade de brancos e nulos no 1T (+0,8 pp por 1 pp de branco/nulo).
+- **Sistema Cartográfico e Análise Regional Integrada (Os 4 Pilares Cartográficos):**
+  1. *Mapa Coroplético Estadual (Macro / UFs e DF):* Vencedor e margem por estado (Lula vermelho vs Flávio azul).
+  2. *Mapa Coroplético de Alta Resolução Municipal (Meso / 5.570 Cidades):* Detecção de viradas (*swing cities*) com card comparativo de 1T e 2T (ex.: Nanuque/MG).
+  3. *Painel Comparativo dos Grandes Colégios (Deep-Dive Sudeste SP, RJ e MG):* Comparações espaciais lado a lado de 1T vs 2T e barras comprovando avanço de Lula superando o de Flávio.
+  4. *Mapa de Bolhas Proporcionais de Avanço de Lula Ponderado pelo Eleitorado:* Círculos proporcionais aos aptos com gradiente contínuo de $\Delta PP$ e callouts das principais capitais.
 - **Rollup Hierárquico Multinível:** Agregação estrita sem distorção em três níveis territoriais:
   1. **Nível Macro (Nacional e UF):** Contribuição de cada estado e região para a margem líquida final.
   2. **Nível Meso (Município):** Identificação de cidades pêndulo (*swing cities*), reversões de liderança e enriquecimento com código IBGE de 7 dígitos.
@@ -138,15 +143,18 @@ virada_eleitoral/
   - Rollup hierárquico das visões nacional, estadual e municipal com tratamento estrito de divisão por zero via `NULLIF` e `COALESCE`.
 
 ### 4.4. Agent Card: GeoJSON & Visualization Exporter (`agent-exporter`)
-- **Missão:** Transformar os dados analíticos consolidados em artefatos estáticos otimizados para consumo web, visualização cartográfica e os 4 pilares visuais de jornalismo de dados.
+- **Missão:** Transformar os dados analíticos consolidados em artefatos estáticos otimizados para consumo web, visualização cartográfica e os 4 pilares visuais + 4 pilares cartográficos de jornalismo de dados.
 - **Competências & Restrições:**
   - Geração dos payloads JSON estáticos dos 4 Pilares Gráficos:
     1. `waterfall_turnover_balance.json` (Cascata de saldo líquido da virada de -2,22 mi a +4,43 mi).
     2. `sankey_vote_flows.json` (Diagrama de fluxo aluvial de votos 1T -> 2T).
     3. `transition_distribution_groups.json` (Barras 100% de destino de outros candidatos, brancos/nulos e ausentes).
     4. `ecological_regression_scatter.json` (Dispersão seção a seção e reta de regressão ponderada).
-  - Geração de resumos e rankings (`summary_national.json`, `summary_uf.json`, `swing_cities.json`, `top_urnas_virada.json`).
-  - Junção dos dados municipais com a malha cartográfica do IBGE (geração de TopoJSON/GeoJSON simplificado com atributos de virada).
+  - Geração dos artefatos dos 4 Pilares Cartográficos:
+    1. `ufs_virada.topojson` e `summary_uf.json` (Mapa macro de UFs com vencedor no 2T).
+    2. `municipios_virada.topojson` e `swing_cities.json` (Mapa meso de 5.570 cidades com viradas e cards 1T x 2T).
+    3. `states_deep_dive_southeast.json` (Painel comparativo lado a lado de SP, RJ e MG).
+    4. `lula_advance_bubble_map.json` (Mapa de bolhas proporcionais ao eleitorado ponderadas por $\Delta PP$).
   - Exportação opcional de partições Parquet leves para permitir consultas interativas no navegador via DuckDB-Wasm.
 
 ### 4.5. Agent Card: QA, Invariants & Fixture Verifier (`agent-qa-verifier`)

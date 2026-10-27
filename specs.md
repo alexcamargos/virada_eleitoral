@@ -36,6 +36,7 @@ A decomposição contábil e estatística investiga exaustivamente:
 | `REQ-EXPO-01` | Contratos JSON & Sankey | Exportação determinística de payloads JSON estáticos (resumos, cidades pêndulo e matriz/fluxo de migração Sankey) validados por Pydantic v2. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
 | `REQ-EXPO-02` | Cartografia IBGE | Cruzamento geográfico e fusão com malha territorial IBGE (GeoJSON/TopoJSON simplificado) para mapas temáticos de calor e virada de 2026. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
 | `REQ-EXPO-03` | Payloads dos 4 Pilares | Geração dos 4 contratos JSON mínimos de visualização: Waterfall, Sankey, Barras Empilhadas de Destino e Dispersão de Regressão. | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
+| `REQ-EXPO-04` | Cartografia e Painéis Regionais | Geração de malhas TopoJSON e contratos para os 4 Pilares Cartográficos do MVP (Mapa Estadual, Mapa Municipal 5.570 cidades, Deep-Dive Sudeste SP/RJ/MG e Bolhas Ponderadas pelo Eleitorado $\Delta PP$). | [`specs/04-export-geojson-and-web.md`](./specs/04-export-geojson-and-web.md) |
 | `REQ-QA-01` | Qualidade / SDD | Suíte de testes `pytest` cobrindo 10 fixtures áureas (`FX-01` a `FX-10`), testes de invariantes e CLI unificada (`virada`) com `--ano 2026`. | [`specs/05-testing-fixtures-and-roadmap.md`](./specs/05-testing-fixtures-and-roadmap.md) |
 
 ---
@@ -63,6 +64,34 @@ Para cumprir a missão de jornalismo de dados eleitorais com rigor científico e
 4. **Pilar 4: Dispersão e Reta de Regressão Seção a Seção (Scatter Plot + Trendline):**
    - **Pergunta respondida:** *Existe evidência empírica nas urnas de que onde havia mais brancos/nulos Lula cresceu mais?*
    - **Estrutura:** Eixo X (% de brancos e nulos no 1T sobre os aptos da seção), Eixo Y (Crescimento de Lula em pontos percentuais no 2T), nuvem de pontos de seções eleitorais e reta de tendência estimada por regressão linear ponderada (WLS), destacando a sensibilidade (ex.: `+0,8 pp para Lula a cada 1 pp de branco e nulo`).
+
+---
+
+### 1.3. O Segundo Componente do MVP: Sistema de Mapas e Análise Espacial Multinível (Os 4 Pilares Cartográficos)
+
+Integrado e compondo a entrega mínima do produto, o sistema disponibiliza uma suíte cartográfica completa e responsiva que permite ao visitante explorar a geografia do voto do macro ao microdado:
+
+1. **Geo-Pilar 1: Mapa Coroplético Estadual (Nacional por UF e DF):**
+   - **Objetivo:** Exibir a divisão macro do país no 2º turno (UFs vencidas por Lula em vermelho vs vencidas por Flávio Bolsonaro em azul).
+   - **Interatividade:** Tooltips com percentual de votos válidos, total de votos nominais e variação entre turnos de cada estado.
+
+2. **Geo-Pilar 2: Mapa Coroplético de Alta Resolução Municipal (5.570 Cidades):**
+   - **Objetivo:** Mapear o candidato mais votado em cada município brasileiro no 2º turno (Lula, Flávio ou Empate).
+   - **Detecção de Viradas Locais (*Swing Cities*):** Filtro e realce imediato para cidades que mudaram de vencedor entre turnos.
+   - **Card / Tooltip Comparativo 1T vs 2T:** Exibição do placar exato de ambos os turnos (exemplo canônico: *Nanuque/MG*, onde Flávio liderou o 1T com 48,54% x 46,87% e Lula virou no 2T com 51,33% x 48,67%).
+
+3. **Geo-Pilar 3: Painel Comparativo dos Grandes Colégios Eleitorais (Deep-Dive Sudeste: SP, RJ e MG):**
+   - **Objetivo:** Permitir ao usuário comparar lado a lado a mancha eleitoral municipal do 1T vs 2T em São Paulo, Minas Gerais e Rio de Janeiro.
+   - **Gráficos Integrados de Avanço:** Barras comparativas de votos totais evidenciando que o avanço de Lula superou largamente o de Flávio Bolsonaro:
+     * *São Paulo:* Lula cresceu +2.613.703 votos (9,50 mi -> 12,11 mi) vs Flávio +1.217.046 (12,92 mi -> 14,13 mi).
+     * *Minas Gerais:* Lula cresceu +1.043.413 votos (5,18 mi -> 6,23 mi) vs Flávio +554.045 (5,77 mi -> 6,33 mi).
+     * *Rio de Janeiro:* Lula cresceu +872.265 votos (3,69 mi -> 4,56 mi) vs Flávio +202.058 (4,96 mi -> 5,16 mi).
+
+4. **Geo-Pilar 4: Mapa de Bolhas Proporcionais de Avanço de Lula ($\Delta PP$ Ponderado pelo Eleitorado):**
+   - **Objetivo:** Evidenciar visualmente onde ocorreu a maior intensidade de migração de votos para Lula no território nacional.
+   - **Estrutura:** Círculos proporcionais ao eleitorado apto municipal com preenchimento em escala cromática contínua (de 0 pp / estável até $\ge +10\text{ pp}$ / maior avanço relativo).
+   - **Destaque das Capitais Estratégicas:** Callouts georreferenciados para as principais metrópoles:
+     * São Paulo (+8,9 pp), Salvador (+8,0 pp), Belo Horizonte (+7,8 pp), Rio de Janeiro (+7,6 pp), Brasília (+7,6 pp), Curitiba (+7,3 pp), Porto Alegre (+7,3 pp), Belém (+7,0 pp), Manaus (+7,0 pp), Fortaleza (+6,6 pp), Recife (+6,0 pp).
 
 ---
 
