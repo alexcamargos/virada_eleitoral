@@ -441,4 +441,3 @@ def test_remote_tse_bu_provider_fetch_expected_sha512(mocker: MockerFixture) -> 
     mock_resp.status_code = 404
     res_none = provider.fetch_expected_sha512("https://cdn.tse.jus.br/notfound.sha512")
     assert res_none is None
-

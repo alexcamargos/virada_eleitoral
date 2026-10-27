@@ -154,4 +154,3 @@ def test_cli_download_mocked(tmp_path: Path, mocker: pytest_mock.MockerFixture) 
     )
     assert result.exit_code == 0
     assert "Download concluído" in result.stdout
-
