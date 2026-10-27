@@ -62,7 +62,7 @@ O objetivo analítico central é mapear como o candidato Luiz Inácio Lula da Si
 
 2. **Decomposição das Fontes de Expansão Votante:**
    Em cada seção, município ou UF, a capacidade de expansão de votos entre o 1T e o 2T decorre de quatro fontes mensuráveis:
-   - **Votos de Terceiros Candidatos do 1T:** $\text{pool\_terceiros} = \text{votos\_outros\_1t}$
+   - **Votos de Terceiros Candidatos do 1T:** $\text{pool\_terceiros} = \text{votos\_outros\_1t}$ (com detalhamento de Cury, Caiado, Renan/Zema e esquerda).
    - **Migração de Votos Brancos:** $\Delta \text{Brancos} = \max(0, \text{votos\_brancos\_1t} - \text{votos\_brancos\_2t})$
    - **Migração de Votos Nulos:** $\Delta \text{Nulos} = \max(0, \text{votos\_nulos\_1t} - \text{votos\_nulos\_2t})$
    - **Ativação de Abstenções (Novos Votantes):** $\Delta \text{Comparecimento} = \text{comparecimento\_2t} - \text{comparecimento\_1t}$
@@ -70,13 +70,44 @@ O objetivo analítico central é mapear como o candidato Luiz Inácio Lula da Si
 3. **Balanço Contábil de Construção de Votos:**
    $$\text{Votos}_{13, 2T} = \text{Votos}_{13, 1T} + \Delta \text{Votos}_{13}$$
    $$\Delta \text{Votos}_{13} \le \text{pool\_terceiros} + \Delta \text{Brancos} + \Delta \text{Nulos} + \max(0, \Delta \text{Comparecimento})$$
-   Essa contabilidade fundamenta os fluxos de migração representados nos diagramas Sankey exportados para o frontend.
 
 ---
 
-## 4. Visões Analíticas Consolidadas (SQL Canônico)
+## 4. Modelagem Estatística Avançada dos 4 Pilares Gráficos
 
-### 4.1. `summary_national`
+### 4.1. Inferência Ecológica e Matriz de Transição de Votos (`REQ-ANAL-04`)
+Como o voto é estritamente secreto, os fluxos eleitorais entre turnos não podem ser observados individualmente na urna. O sistema aplica **Inferência Ecológica (Ecological Inference - EI)** e **Regressão Linear Ponderada (WLS)** sobre as seções eleitorais pareadas, estado a estado, calibrada para bater rigorosamente com os totais oficiais do TSE:
+
+- Para cada grupo de origem $i \in \{\text{Outros Candidatos}, \text{Brancos/Nulos}, \text{Ausentes que Voltaram}, \text{Base Lula 1T}, \text{Base Flávio 1T}\}$, estima-se o vetor de probabilidades de transição:
+  $$P(i \to j) \quad \text{onde } j \in \{\text{Lula}, \text{Flávio}, \text{Branco/Nulo}, \text{Não Votou}\}$$
+- **Invariante de Conservação de Votos da Matriz:**
+  $$\sum_j P(i \to j) = 1.0 \quad \text{e} \quad \sum_i N_i \cdot P(i \to j) = \text{Total Destino}_{j, 2T}$$
+
+### 4.2. Decomposição de Saldo Líquido da Virada — Waterfall (`REQ-ANAL-05`)
+A inversão da margem eleitoral ($\Delta \text{Margem}$) é decomposta na soma dos saldos líquidos gerados por cada grupo do 1º turno:
+$$\Delta \text{Margem} = \text{Margem}_{2T} - \text{Margem}_{1T} = \sum_{g} \text{Saldo}_{g}$$
+$$\text{Saldo}_{g} = \text{Votos}_{g \to \text{Lula}} - \text{Votos}_{g \to \text{Flávio}}$$
+
+Degraus fundamentais consolidados para 2026:
+- $\text{Margem 1º Turno}: -2,22 \text{ milhões}$ (vantagem de Flávio Bolsonaro)
+- $\text{Saldo de Ex-Brancos e Nulos}: +3,23 \text{ milhões}$ (Lula 3,61 mi vs Flávio 0,38 mi)
+- $\text{Saldo de Ausentes que Voltaram}: +1,83 \text{ milhões}$ (Lula 3,04 mi vs Flávio 1,21 mi)
+- $\text{Saldo de Perdas de Base}: +1,27 \text{ milhões}$ (Flávio perdeu 1,70 mi da base; Lula perdeu 0,60 mi)
+- $\text{Saldo de Outros Candidatos}: +0,32 \text{ milhões}$ (Lula 4,16 mi vs Flávio 3,84 mi)
+- $\text{Margem 2º Turno}: +4,43 \text{ milhões}$ (vantagem e vitória de Lula)
+
+### 4.3. Regressão Linear Ponderada por Seção (Dispersão Brancos/Nulos vs $\Delta PP$ Lula)
+Para validar o fenômeno no microdado das seções:
+- $X_s = \frac{\text{votos\_brancos\_1t}_s + \text{votos\_nulos\_1t}_s}{\text{aptos\_1t}_s} \times 100$
+- $Y_s = \left(\frac{\text{votos\_lula\_2t}_s}{\text{aptos\_2t}_s} - \frac{\text{votos\_lula\_1t}_s}{\text{aptos\_1t}_s}\right) \times 100$
+- Reta estimada por WLS: $Y = \hat{\alpha} + \hat{\beta} X$, com peso $w_s = \text{aptos}_s$.
+- O coeficiente $\hat{\beta} \approx +0,8$ indica ganho de $0,8\text{ pp}$ para Lula a cada $1\text{ pp}$ de brancos e nulos no 1T.
+
+---
+
+## 5. Visões Analíticas Consolidadas (SQL Canônico)
+
+### 5.1. `summary_national`
 ```sql
 CREATE OR REPLACE VIEW summary_national AS
 SELECT
@@ -101,7 +132,7 @@ FROM pair_sections
 GROUP BY ano_eleicao;
 ```
 
-### 4.2. `agg_municipio`
+### 5.2. `agg_municipio`
 ```sql
 CREATE OR REPLACE VIEW agg_municipio AS
 SELECT
@@ -139,7 +170,7 @@ FROM pair_sections
 GROUP BY ano_eleicao, sg_uf, cd_municipio, cd_municipio_ibge, nm_municipio;
 ```
 
-### 4.3. `swing_cities` (Cidades Pêndulo com Virada)
+### 5.3. `swing_cities` (Cidades Pêndulo com Virada)
 ```sql
 CREATE OR REPLACE VIEW swing_cities AS
 SELECT *

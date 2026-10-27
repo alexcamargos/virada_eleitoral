@@ -15,6 +15,11 @@ Os arquivos de Boletim de Urna contêm todos os cargos em disputa (Presidente, G
    - `votos_lula`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 13` (Luiz Inácio Lula da Silva).
    - `votos_adv`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 22` (Flávio Bolsonaro).
    - `votos_outros`: soma de `QT_VOTOS` de todos os terceiros candidatos habilitados no 1T (`NR_VOTAVEL NOT IN (13, 22, 95, 96)`).
+   - **Discriminação de Terceiros Candidatos de 2026 (Subgrupos para Decomposição):**
+     * `votos_cury_1t`: votos nominais do candidato Cury.
+     * `votos_caiado_1t`: votos nominais do candidato Ronaldo Caiado.
+     * `votos_renan_zema_1t`: votos dos candidatos Renan Santos e Romeu Zema.
+     * `votos_outros_esquerda_1t`: votos de candidatos menores de esquerda.
    - `votos_brancos`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 95`.
    - `votos_nulos`: soma de `QT_VOTOS` onde `NR_VOTAVEL = 96`.
    - `aptos`: valor máximo de `QT_APTOS` registrado para o cargo Presidente.
