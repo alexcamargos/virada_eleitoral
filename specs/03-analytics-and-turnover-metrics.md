@@ -178,3 +178,57 @@ FROM agg_municipio
 WHERE status_virada_municipio IN ('VIRADA_LULA', 'VIRADA_ADVERSARIO')
 ORDER BY ABS(delta_margem) DESC, delta_votos_lula DESC;
 ```
+
+### 5.4. `states_deep_dive_southeast` (Comparativo de Colégios Estratégicos: SP, RJ e MG)
+Alimenta a análise comparativa detalhada do Sudeste, demonstrando onde o avanço nominal de Lula superou o de Flávio:
+```sql
+CREATE OR REPLACE VIEW states_deep_dive_southeast AS
+SELECT
+    ano_eleicao,
+    sg_uf,
+    votos_lula_1t,
+    votos_lula_2t,
+    delta_votos_lula,
+    votos_adv_1t AS votos_flavio_1t,
+    votos_adv_2t AS votos_flavio_2t,
+    (votos_adv_2t - votos_adv_1t) AS delta_votos_flavio,
+    ROUND(delta_votos_lula * 1.0 / NULLIF(votos_adv_2t - votos_adv_1t, 0), 2) AS razao_crescimento_lula_flavio,
+    pct_lula_1t,
+    pct_lula_2t,
+    delta_pp_lula
+FROM agg_uf
+WHERE sg_uf IN ('SP', 'MG', 'RJ')
+ORDER BY sg_uf;
+```
+
+### 5.5. `lula_advance_bubble_metrics` (Métricas para Mapa de Bolhas Proporcionais)
+Estrutura para cada um dos 5.570 municípios o tamanho do eleitorado e o avanço em pontos percentuais para visualização cartográfica proporcional:
+```sql
+CREATE OR REPLACE VIEW lula_advance_bubble_metrics AS
+SELECT
+    m.ano_eleicao,
+    m.sg_uf,
+    m.cd_municipio,
+    m.cd_municipio_ibge,
+    m.nm_municipio,
+    SUM(p.aptos_2t) AS total_aptos,
+    m.votos_lula_1t,
+    m.votos_lula_2t,
+    m.delta_votos_lula,
+    m.pct_lula_1t,
+    m.pct_lula_2t,
+    m.delta_pp_lula,
+    CASE
+        WHEN m.delta_pp_lula >= 10.0 THEN 'AVANCO_MUITO_ALTO'
+        WHEN m.delta_pp_lula >= 7.5 THEN 'AVANCO_ALTO'
+        WHEN m.delta_pp_lula >= 5.0 THEN 'AVANCO_MEDIO'
+        WHEN m.delta_pp_lula >= 2.5 THEN 'AVANCO_MODERADO'
+        ELSE 'ESTAVEL'
+    END AS categoria_avanco
+FROM agg_municipio m
+JOIN pair_sections p
+  ON m.sg_uf = p.sg_uf AND m.cd_municipio = p.cd_municipio
+GROUP BY m.ano_eleicao, m.sg_uf, m.cd_municipio, m.cd_municipio_ibge, m.nm_municipio,
+         m.votos_lula_1t, m.votos_lula_2t, m.delta_votos_lula, m.pct_lula_1t, m.pct_lula_2t, m.delta_pp_lula
+ORDER BY total_aptos DESC;
+```

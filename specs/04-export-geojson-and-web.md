@@ -21,9 +21,11 @@ data/export/
 ├── sankey_vote_flows.json            # PILAR 2: Fluxos aluviais completos de migração de votos 1T -> 2T
 ├── transition_distribution_groups.json # PILAR 3: Barras empilhadas 100% de destino por grupo de origem
 ├── ecological_regression_scatter.json # PILAR 4: Dispersão seção a seção e reta de regressão ponderada
+├── states_deep_dive_southeast.json   # GEO-PILAR 3: Painel comparativo de avanço em SP, RJ e MG
+├── lula_advance_bubble_map.json      # GEO-PILAR 4: Bolhas proporcionais ao eleitorado com delta pp de Lula
 └── geo/
-    ├── ufs_virada.topojson           # Malha estadual com atributos consolidados
-    └── municipios_virada.topojson     # Malha municipal simplificada com atributos de virada
+    ├── ufs_virada.topojson           # GEO-PILAR 1: Malha estadual com vencedor e percentuais 2T
+    └── municipios_virada.topojson     # GEO-PILAR 2: Malha de 5.570 municípios com status de virada e percentuais
 ```
 
 ### 1.1. Contrato `summary_national.json`
@@ -215,15 +217,97 @@ Array de municípios onde ocorreu inversão de vencedor entre turnos:
 ]
 ```
 
+### 1.7. Contrato `states_deep_dive_southeast.json` (GEO-PILAR 3: Painel Sudeste SP, RJ e MG)
+Contrato com a comparação de 1T e 2T para os três maiores colégios eleitorais do país:
+```json
+{
+  "ano_eleicao": 2026,
+  "titulo": "Votos totais em SP, RJ e MG - Avanço de Lula foi mais que o dobro de Flávio",
+  "estados": [
+    {
+      "sg_uf": "SP",
+      "nome_estado": "São Paulo",
+      "lula": {"votos_1t": 9505413, "votos_2t": 12119116, "delta_nominal": 2613703, "pct_1t": 40.89, "pct_2t": 46.14, "delta_pp": 5.25},
+      "flavio": {"votos_1t": 12922023, "votos_2t": 14139069, "delta_nominal": 1217046, "pct_1t": 55.57, "pct_2t": 53.86, "delta_pp": -1.71},
+      "razao_crescimento": 2.15
+    },
+    {
+      "sg_uf": "MG",
+      "nome_estado": "Minas Gerais",
+      "lula": {"votos_1t": 5188936, "votos_2t": 6232349, "delta_nominal": 1043413, "pct_1t": 43.18, "pct_2t": 49.60, "delta_pp": 6.42},
+      "flavio": {"votos_1t": 5777548, "votos_2t": 6331593, "delta_nominal": 554045, "pct_1t": 48.08, "pct_2t": 50.40, "delta_pp": 2.32},
+      "razao_crescimento": 1.88
+    },
+    {
+      "sg_uf": "RJ",
+      "nome_estado": "Rio de Janeiro",
+      "lula": {"votos_1t": 3693021, "votos_2t": 4565286, "delta_nominal": 872265, "pct_1t": 38.23, "pct_2t": 46.90, "delta_pp": 8.67},
+      "flavio": {"votos_1t": 4966844, "votos_2t": 5168902, "delta_nominal": 202058, "pct_1t": 51.41, "pct_2t": 53.10, "delta_pp": 1.69},
+      "razao_crescimento": 4.32
+    }
+  ]
+}
+```
+
+### 1.8. Contrato `lula_advance_bubble_map.json` (GEO-PILAR 4: Bolhas Proporcionais de Avanço de Lula)
+Contém os centróides, tamanho de eleitorado apto e ganho em pontos percentuais para os 5.570 municípios, com metadados para callouts das principais metrópoles:
+```json
+{
+  "ano_eleicao": 2026,
+  "titulo": "Onde Lula avançou entre o 1º e o 2º Turno (2026) ponderado pelo eleitorado",
+  "metrica_escala": "Crescimento em pontos percentuais dos votos válidos (1T para 2T)",
+  "escala_cores": {"min_pp": 0.0, "max_pp": 10.0, "cor_min": "#FFFFFF", "cor_max": "#800000"},
+  "destaques_capitais": [
+    {"cidade": "São Paulo", "sg_uf": "SP", "delta_pp": 8.9, "lat": -23.5505, "lon": -46.6333, "aptos": 9314000},
+    {"cidade": "Salvador", "sg_uf": "BA", "delta_pp": 8.0, "lat": -12.9777, "lon": -38.5016, "aptos": 1980000},
+    {"cidade": "Belo Horizonte", "sg_uf": "MG", "delta_pp": 7.8, "lat": -19.9167, "lon": -43.9345, "aptos": 2000000},
+    {"cidade": "Rio de Janeiro", "sg_uf": "RJ", "delta_pp": 7.6, "lat": -22.9068, "lon": -43.1729, "aptos": 5000000},
+    {"cidade": "Brasília", "sg_uf": "DF", "delta_pp": 7.6, "lat": -15.7975, "lon": -47.8919, "aptos": 2200000},
+    {"cidade": "Curitiba", "sg_uf": "PR", "delta_pp": 7.3, "lat": -25.4284, "lon": -49.2733, "aptos": 1400000},
+    {"cidade": "Porto Alegre", "sg_uf": "RS", "delta_pp": 7.3, "lat": -30.0346, "lon": -51.2177, "aptos": 1100000},
+    {"cidade": "Belém", "sg_uf": "PA", "delta_pp": 7.0, "lat": -1.4558, "lon": -48.4902, "aptos": 1050000},
+    {"cidade": "Manaus", "sg_uf": "AM", "delta_pp": 7.0, "lat": -3.1190, "lon": -60.0217, "aptos": 1400000},
+    {"cidade": "Fortaleza", "sg_uf": "CE", "delta_pp": 6.6, "lat": -3.7172, "lon": -38.5433, "aptos": 1800000},
+    {"cidade": "Recife", "sg_uf": "PE", "delta_pp": 6.0, "lat": -8.0476, "lon": -34.8770, "aptos": 1200000}
+  ],
+  "municipios": [
+    {"cd_ibge": 3550308, "nm": "São Paulo", "uf": "SP", "aptos": 9314000, "delta_pp": 8.9, "lat": -23.5505, "lon": -46.6333},
+    {"cd_ibge": 3144300, "nm": "Nanuque", "uf": "MG", "aptos": 31200, "delta_pp": 4.46, "status_virada": "VIRADA_LULA", "lat": -17.8389, "lon": -40.3542}
+  ]
+}
+```
+
 ---
 
-## 2. Fusão Cartográfica com Malha IBGE (`REQ-EXPO-02`)
+## 2. Fusão Cartográfica com Malha IBGE e os 4 Pilares Geo-Analíticos (`REQ-EXPO-02`, `REQ-EXPO-04`)
 
-1. **Malha Vetorial Simplificada:**
-   - O repositório armazena a malha municipal simplificada do IBGE (limite de tolerância `0.005°` para manter o tamanho `< 4 MB`).
-2. **Algoritmo de Merge:**
-   - Cruzar os atributos de `agg_municipio` com o identificador de 7 dígitos `cd_municipio_ibge` presente nas propriedades das feições geográficas.
-   - Gerar `municipios_virada.topojson` injetando diretamente nos polígonos:
-     `status_virada_municipio`, `delta_pp_lula`, `delta_votos_lula`, `pct_lula_2t`.
-3. **Suporte a DuckDB-Wasm no Frontend:**
-   - Exportação particionada por UF em `data/export/wasm/sections_{uf}.parquet` para permitir que o usuário filtre ou inspecione qualquer urna no navegador sem requisições a um servidor backend.
+A entrega mínima cartográfica integra 4 pilares espaciais multiníveis:
+
+1. **GEO-PILAR 1: Mapa Coroplético Estadual (`ufs_virada.topojson`):**
+   - Malha das 26 UFs + DF simplificada (< 300 KB).
+   - Injeta em cada polígono:
+     * `vencedor_2t`: `"LULA"` (cor vermelha) ou `"FLAVIO"` (cor azul).
+     * `pct_lula_2t`, `pct_flavio_2t`, `delta_pp_lula`, `total_validos_2t`.
+   - Permite ao visitante visualizar instantaneamente a divisão geopolítica macro do Brasil.
+
+2. **GEO-PILAR 2: Mapa Coroplético de Alta Resolução dos 5.570 Municípios (`municipios_virada.topojson`):**
+   - Malha de todos os municípios simplificada (tolerância `0.005°`, tamanho `< 4 MB`).
+   - Injeta nas feições municipais:
+     * `vencedor_2t`: `"LULA"`, `"FLAVIO"` ou `"EMPATE"`.
+     * `status_virada_municipio`: `"VIRADA_LULA"`, `"VIRADA_ADVERSARIO"`, `"MANTEVE_LIDERANCA"`, `"MANTEVE_DESVANTAGEM"`.
+     * Atributos de ambos os turnos para alimentar o **Card Comparativo de Cidades Pêndulo** (exemplo canônico de aceitação: **Nanuque / MG**, exibindo foto, porcentagens de 1T e 2T e selo de 'Eleito'):
+       - 1T: Flávio Bolsonaro (48,54%) vs Lula (46,87%) [Azul / Flávio liderando]
+       - 2T: Lula (51,33% Eleito) vs Flávio Bolsonaro (48,67%) [Vermelho / Lula virando]
+
+3. **GEO-PILAR 3: Painel Comparativo Lado a Lado dos Grandes Colégios (SP, RJ e MG):**
+   - Permite ao visitante alternar ou visualizar lado a lado o mapa municipal de 1T vs 2T nos três maiores estados do país.
+   - Gráficos integrados de barras comparativas alimentados por `states_deep_dive_southeast.json` demonstrando que o crescimento de Lula superou em mais que o dobro o avanço de Flávio na região mais populosa do Brasil.
+
+4. **GEO-PILAR 4: Mapa de Bolhas Proporcionais de Avanço de Lula Ponderado pelo Eleitorado:**
+   - Renderização sobre a malha de centróides municipais alimentada por `lula_advance_bubble_map.json`.
+   - Diâmetro da bolha calibrado pela raiz quadrada de `total_aptos` ($\text{raio} \propto \sqrt{\text{aptos}}$).
+   - Gradiente de cor contínuo de branco/rosado (0 pp / estável) a bordô escuro ($\ge +10\text{ pp}$ / migração intensa).
+   - Callouts interativos para as 11 maiores capitais com badges dos pontos percentuais ganhos entre turnos.
+
+5. **Suporte a Consultas Locais via DuckDB-Wasm:**
+   - Exportação de partições Parquet por UF em `data/export/wasm/sections_{uf}.parquet` permitindo inspeção interativa de qualquer uma das ~470.000 seções no navegador sem backend dinâmico.
