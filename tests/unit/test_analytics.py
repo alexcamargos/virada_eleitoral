@@ -14,8 +14,13 @@ import pytest
 from tests.fixtures.builder import build_synthetic_bu_dataset
 from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
 from virada_eleitoral.analytics.metrics import (
+    build_ecological_regression_scatter_payload,
+    build_sankey_vote_flows,
     calculate_absorption_efficiency,
+    calculate_waterfall_turnover_balance,
     classify_turnover,
+    compute_regression_trendline,
+    estimate_ecological_transition_matrix,
     validate_dataframe_invariants,
 )
 from virada_eleitoral.analytics.storage import (
@@ -230,3 +235,57 @@ def test_aggregation_idempotence(golden_paired_df: pl.DataFrame) -> None:
 
     assert dict(res_uf) == dict(res_muni)
     consolidator.close()
+
+
+def test_calculate_waterfall_turnover_balance() -> None:
+    """Valida o cálculo e balanceamento da cascata da virada (PILAR 1)."""
+    payload = calculate_waterfall_turnover_balance(ano=2026)
+    assert payload.ano_eleicao == 2026
+    assert payload.diferenca_1t == -2.22
+    assert payload.diferenca_2t == 4.43
+    assert len(payload.degraus) == 4
+
+    # Invariante da cascata: diferenca_2t - diferenca_1t == soma dos degraus
+    soma_degraus = sum(d.saldo_liquido for d in payload.degraus)
+    assert (payload.diferenca_2t - payload.diferenca_1t) == pytest.approx(soma_degraus, abs=1e-2)
+
+
+def test_estimate_ecological_transition_matrix() -> None:
+    """Valida a matriz de transição de grupos e subcandidatos (PILAR 3)."""
+    payload = estimate_ecological_transition_matrix(ano=2026)
+    assert payload.ano_eleicao == 2026
+    assert len(payload.grupos) == 3
+
+    grupo_outros = next(g for g in payload.grupos if g.id == "outros_total")
+    assert grupo_outros.subcandidatos is not None
+    assert len(grupo_outros.subcandidatos) == 3
+    nomes_sub = [s.nome for s in grupo_outros.subcandidatos]
+    assert "Cury" in nomes_sub
+    assert "Caiado" in nomes_sub
+
+
+def test_build_sankey_vote_flows() -> None:
+    """Valida a construção do fluxo de votos aluvial (PILAR 2)."""
+    payload = build_sankey_vote_flows(ano=2026)
+    assert payload.ano_eleicao == 2026
+    assert payload.total_novos_votos_lula == 11.0
+    assert payload.total_novos_votos_flavio == 4.4
+    assert len(payload.nodes) == 9
+    assert len(payload.links) == 16
+
+
+def test_compute_regression_trendline_and_scatter_payload(
+    golden_paired_df: pl.DataFrame,
+) -> None:
+    """Valida a regressão WLS e a geração da dispersão amostral (PILAR 4)."""
+    both_df = golden_paired_df.filter(pl.col("status_pareamento") == "PAREADA_AMBOS")
+    beta, alpha, r2 = compute_regression_trendline(both_df)
+    assert isinstance(beta, float)
+    assert isinstance(alpha, float)
+    assert 0.0 <= r2 <= 1.0
+
+    payload = build_ecological_regression_scatter_payload(both_df, ano=2026, max_samples=10)
+    assert payload.ano_eleicao == 2026
+    assert payload.regressao.total_secoes_modelo >= len(both_df)
+    assert len(payload.pontos_amostra) <= 10
+    assert len(payload.pontos_amostra) > 0
