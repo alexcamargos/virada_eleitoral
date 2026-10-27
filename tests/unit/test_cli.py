@@ -6,6 +6,7 @@ Satisfaz: REQ-ANAL-01, REQ-NORM-01..03, REQ-EXPO-01..02, REQ-QA-01, FX-01 a FX-1
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from typer.testing import CliRunner
 
@@ -14,6 +15,9 @@ from virada_eleitoral.analytics.duckdb_consolidator import DuckDbConsolidator
 from virada_eleitoral.cli import app
 from virada_eleitoral.normalizer.pairing import pair_turnover_sections
 from virada_eleitoral.normalizer.pivot import pivot_presidential_bu
+
+if TYPE_CHECKING:
+    import pytest_mock
 
 runner = CliRunner()
 
@@ -96,3 +100,58 @@ def test_cli_export_and_verify_2026(tmp_path: Path) -> None:
     assert "Invariante 7: Conservação de Transição (Linhas = 100%)" in verify_result.stdout
     assert "Os 4 Pilares Gráficos de Fluxo" in verify_result.stdout
     assert "Os 4 Pilares Cartográficos Multinível" in verify_result.stdout
+
+
+def test_cli_seed_sample(tmp_path: Path) -> None:
+    """Verifica execução do comando seed-sample."""
+    out_dir = tmp_path / "seed"
+    result = runner.invoke(app, ["seed-sample", "--out-dir", str(out_dir)])
+    assert result.exit_code == 0
+    assert "Arquivos de demonstração gerados com sucesso" in result.stdout
+    assert len(list(out_dir.glob("*.csv"))) == 2
+
+
+def test_cli_normalize_empty_dir(tmp_path: Path) -> None:
+    """Verifica retorno 0 de normalize quando não houver arquivos brutos suficientes."""
+    empty_raw = tmp_path / "empty_raw"
+    empty_raw.mkdir(parents=True)
+    result = runner.invoke(app, ["normalize", "--raw-dir", str(empty_raw)])
+    assert result.exit_code == 0
+    assert "insuficientes" in result.stdout
+
+
+def test_cli_consolidate_no_parquet(tmp_path: Path) -> None:
+    """Verifica exit 1 de consolidate quando nenhuma partição for localizada."""
+    empty_proc = tmp_path / "empty_proc"
+    empty_proc.mkdir(parents=True)
+    result = runner.invoke(app, ["consolidate", "--processed-dir", str(empty_proc)])
+    assert result.exit_code == 1
+    assert "Nenhuma partição Parquet encontrada" in result.stdout
+
+
+def test_cli_download_mocked(tmp_path: Path, mocker: pytest_mock.MockerFixture) -> None:
+    """Verifica comando download com mock de catálogo do TSE."""
+    dest_dir = tmp_path / "download_raw"
+    dest_dir.mkdir(parents=True)
+
+    mock_bundle = mocker.MagicMock()
+    mock_bundle.file_path = dest_dir / "bweb_1t_AC_test.zip"
+    mock_bundle.file_path.write_bytes(b"TESTE")
+    mock_bundle.file_size_bytes = 5
+
+    mocker.patch(
+        "virada_eleitoral.harvester.remote_provider.RemoteTseBuProvider.fetch_dataset_catalog",
+        return_value={("AC", 1): ("https://cdn.tse.jus.br/bu_ac_1t.zip", None)},
+    )
+    mocker.patch(
+        "virada_eleitoral.harvester.remote_provider.RemoteTseBuProvider.download_bu_file",
+        return_value=mock_bundle,
+    )
+
+    result = runner.invoke(
+        app,
+        ["download", "--ano", "2026", "--uf", "AC", "--turno", "1", "--dest-dir", str(dest_dir)],
+    )
+    assert result.exit_code == 0
+    assert "Download concluído" in result.stdout
+

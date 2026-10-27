@@ -339,3 +339,20 @@ def test_pairing_propagates_subcandidate_columns(tmp_path: Path) -> None:
     assert r101["votos_caiado_1t"] == 10
     assert r101["votos_renan_zema_1t"] == 5
     assert r101["votos_outros_esquerda_1t"] == 0
+
+
+def test_pivot_presidential_bu_nonexistent_and_empty(tmp_path: Path) -> None:
+    """Verifica lançamento de SchemaValidationError em arquivo inexistente ou sem votos."""
+    with pytest.raises(SchemaValidationError, match="não encontrado"):
+        pivot_presidential_bu(tmp_path / "inexistente.csv")
+
+    # CSV válido mas apenas com cargo de Governador (CD_CARGO = 3)
+    gov_csv = tmp_path / "gov_bu.csv"
+    gov_csv.write_text(
+        "SG_UF;CD_MUNICIPIO;NM_MUNICIPIO;NR_ZONA;NR_SECAO;CD_CARGO_PERGUNTA;NR_VOTAVEL;QT_VOTOS;QT_APTOS;QT_COMPARECIMENTO;QT_ABSTENCOES\n"
+        "SP;71072;SAO PAULO;1;1;3;10;50;100;90;10\n",
+        encoding="iso-8859-1",
+    )
+    df = pivot_presidential_bu(gov_csv, ano=2026, turno=1)
+    assert len(df) == 0
+    assert "votos_validos" in df.columns
