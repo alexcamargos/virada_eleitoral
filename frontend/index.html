@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virada Eleitoral 2026 — Auditoria Técnica e Comparativo 1T x 2T</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <!-- Top Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
+          <i class="fa-solid fa-chart-line text-lg"></i>
+        </span>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Virada Eleitoral 2026
+            <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+              1T x 2T Oficial
+            </span>
+          </h1>
+          <p class="text-xs text-slate-400">Auditoria Técnica e Monitoramento de Boletins de Urna (TSE)</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span id="data-status-badge" class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+          <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Dados Carregados
+        </span>
+        <button onclick="reloadAllData()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrows-rotate"></i> Atualizar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Hero / Headline Summary -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+        <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
+          <span>VOTOS LULA (13)</span>
+          <span class="text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded text-[10px] font-bold">PT</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span class="text-2xl font-bold font-mono text-white" id="val-lula-2t">--</span>
+          <span class="text-xs font-mono font-semibold" id="val-lula-pct-2t">-- %</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+          <span>1ºT: <strong class="text-slate-300 font-mono" id="val-lula-1t">--</strong></span>
+          <span class="font-mono font-bold" id="val-lula-delta">--</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+        <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
+          <span>VOTOS ADVERSÁRIO (22)</span>
+          <span class="text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded text-[10px] font-bold">PL / OP</span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span class="text-2xl font-bold font-mono text-white" id="val-adv-2t">--</span>
+          <span class="text-xs font-mono font-semibold" id="val-adv-pct-2t">-- %</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+          <span>1ºT: <strong class="text-slate-300 font-mono" id="val-adv-1t">--</strong></span>
+          <span class="font-mono font-bold" id="val-adv-delta">--</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+        <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
+          <span>MARGEM LÍQUIDA (2T)</span>
+          <i class="fa-solid fa-scale-balanced text-slate-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span class="text-2xl font-bold font-mono text-white" id="val-margem-2t">--</span>
+          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded" id="val-margem-status">--</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+          <span>Δ Margem (2T - 1T):</span>
+          <span class="font-mono font-bold" id="val-delta-margem">--</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+        <div class="text-xs font-medium text-slate-400 flex items-center justify-between">
+          <span>SEÇÕES ANALISADAS</span>
+          <i class="fa-solid fa-box-archive text-slate-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span class="text-2xl font-bold font-mono text-white" id="val-total-secoes">--</span>
+          <span class="text-xs text-emerald-400 font-medium">100% Pareadas</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center justify-between border-t border-slate-800/80 pt-2">
+          <span>Urnas c/ Virada Lula:</span>
+          <span class="font-mono font-bold text-emerald-400" id="val-urnas-virada">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Analytics: Charts -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-column text-indigo-400"></i>
+          Comparação Nominal de Votos (1º Turno x 2º Turno)
+        </h2>
+        <div class="h-64">
+          <canvas id="chart-comparison"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-emerald-400"></i>
+          Classificação Determinística das Urnas
+        </h2>
+        <div class="h-64 flex items-center justify-center">
+          <canvas id="chart-classification"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visão por Unidade da Federação (UF) -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-map-location-dot text-emerald-400"></i>
+            Desempenho por Estado (UFs Processadas)
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Consolidação de votos, deltas nominais, variação percentual e urnas de virada por UF.</p>
+        </div>
+        <span class="px-2.5 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md" id="badge-uf-count">
+          0 UFs
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-950/60 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-3">UF</th>
+              <th class="px-4 py-3 text-right">Seções</th>
+              <th class="px-4 py-3 text-right">Lula 1ºT</th>
+              <th class="px-4 py-3 text-right">Lula 2ºT</th>
+              <th class="px-4 py-3 text-right">Δ Nominal Lula</th>
+              <th class="px-4 py-3 text-right">Δ pp Lula</th>
+              <th class="px-4 py-3 text-right">Δ Margem Líquida</th>
+              <th class="px-4 py-3 text-center">Urnas Virada Lula</th>
+              <th class="px-4 py-3 text-center">Urnas Virada Adv</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-uf-list" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tr>
+              <td colspan="9" class="px-4 py-6 text-center text-slate-500 font-sans">
+                Carregando estados...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Swing Cities / Cidades Pêndulo -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate text-amber-400"></i>
+            Cidades Pêndulo (Swing Cities 2026)
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Municípios onde ocorreu reversão completa do vencedor entre o 1º e o 2º turno.</p>
+        </div>
+        <span class="px-2.5 py-1 text-xs font-semibold bg-amber-400/10 text-amber-400 border border-amber-400/20 rounded-md" id="badge-swing-count">
+          0 cidades detectadas
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-950/60 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-3">UF</th>
+              <th class="px-4 py-3">Município</th>
+              <th class="px-4 py-3 text-right">Lula 1ºT</th>
+              <th class="px-4 py-3 text-right">Lula 2ºT</th>
+              <th class="px-4 py-3 text-right">Δ Nominal</th>
+              <th class="px-4 py-3 text-right">Δ Pontos %</th>
+              <th class="px-4 py-3 text-right">Δ Margem</th>
+              <th class="px-4 py-3 text-center">Inversão</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-swing-cities" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tr>
+              <td colspan="8" class="px-4 py-6 text-center text-slate-500 font-sans">
+                Carregando dados das cidades de virada...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Seções / Urnas de Destaque -->
+    <section class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-sky-400"></i>
+            Urnas de Virada Atípica e Maior Variação
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Seções eleitorais auditadas individualmente entre turnos.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="input-search-secao" placeholder="Buscar município ou seção..." onkeyup="filterSecoesTable()"
+                 class="px-3 py-1.5 text-xs bg-slate-950 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500">
+        </div>
+      </div>
+
+      <div class="overflow-x-auto max-h-96">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-950/60 text-xs uppercase font-semibold text-slate-400 border-b border-slate-800 sticky top-0">
+            <tr>
+              <th class="px-4 py-3">Localização</th>
+              <th class="px-4 py-3">Zona / Seção</th>
+              <th class="px-4 py-3 text-right">Lula (1T -> 2T)</th>
+              <th class="px-4 py-3 text-right">Adv (1T -> 2T)</th>
+              <th class="px-4 py-3 text-right">Δ Votos Lula</th>
+              <th class="px-4 py-3 text-right">Δ Margem</th>
+              <th class="px-4 py-3 text-center">Classificação</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-turnover-sections" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tr>
+              <td colspan="7" class="px-4 py-6 text-center text-slate-500 font-sans">
+                Carregando seções eleitorais...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+    <p>Projeto de Jornalismo de Dados e Auditoria Cívica • Baseado em dados abertos do Tribunal Superior Eleitoral (TSE)</p>
+    <p class="mt-1">Invariantes matemáticas auditadas com precisão contábil e persistência analítica DuckDB</p>
+  </footer>
+
+  <script>
+    let rawSecoesData = [];
+    let chartComparison = null;
+    let chartClassification = null;
+
+    function formatNumber(num) {
+      if (num === null || num === undefined) return '--';
+      return new Intl.NumberFormat('pt-BR').format(num);
+    }
+
+    function formatDelta(num) {
+      if (num === null || num === undefined) return '--';
+      const sign = num > 0 ? '+' : '';
+      return `${sign}${new Intl.NumberFormat('pt-BR').format(num)}`;
+    }
+
+    async function loadJson(fileName) {
+      const candidates = [
+        `../data/export/${fileName}`,
+        `./data/export/${fileName}`,
+        `/data/export/${fileName}`,
+        `data/export/${fileName}`,
+        `../export/${fileName}`,
+        `./export/${fileName}`,
+        `/export/${fileName}`
+      ];
+      for (const path of candidates) {
+        try {
+          const res = await fetch(path);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          // tentar próximo caminho
+        }
+      }
+      console.warn(`Não foi possível carregar ${fileName} em nenhum dos caminhos previstos.`);
+      return null;
+    }
+
+    async function reloadAllData() {
+      // 1. Carregar resumo nacional/estadual
+      const national = await loadJson('summary_national.json');
+      const ufList = await loadJson('summary_uf.json') || [];
+      const swingCities = await loadJson('swing_cities.json') || [];
+      const sections = await loadJson('top_urnas_virada.json') || await loadJson('turnover_sections.json') || [];
+
+      if (national) {
+        updateKPIs(national);
+        renderCharts(national);
+      }
+      renderUfList(ufList);
+      renderSwingCities(swingCities);
+      renderSecoes(sections);
+    }
+
+    function updateKPIs(d) {
+      document.getElementById('val-lula-2t').innerText = formatNumber(d.total_lula_2t);
+      document.getElementById('val-lula-pct-2t').innerText = `${d.pct_lula_2t_brasil.toFixed(2)}%`;
+      document.getElementById('val-lula-1t').innerText = formatNumber(d.total_lula_1t);
+
+      const deltaEl = document.getElementById('val-lula-delta');
+      deltaEl.innerText = formatDelta(d.delta_nacional_lula);
+      deltaEl.className = d.delta_nacional_lula >= 0 ? 'text-emerald-400 font-mono font-bold' : 'text-red-400 font-mono font-bold';
+
+      document.getElementById('val-adv-2t').innerText = formatNumber(d.total_adv_2t);
+      const advPct = d.total_validos_2t > 0 ? (d.total_adv_2t * 100 / d.total_validos_2t).toFixed(2) : '--';
+      document.getElementById('val-adv-pct-2t').innerText = `${advPct}%`;
+      document.getElementById('val-adv-1t').innerText = formatNumber(d.total_adv_1t);
+
+      const advDelta = (d.total_adv_2t - d.total_adv_1t);
+      const advDeltaEl = document.getElementById('val-adv-delta');
+      advDeltaEl.innerText = formatDelta(advDelta);
+      advDeltaEl.className = advDelta >= 0 ? 'text-blue-400 font-mono font-bold' : 'text-slate-400 font-mono font-bold';
+
+      const margem2t = d.total_lula_2t - d.total_adv_2t;
+      document.getElementById('val-margem-2t').innerText = formatDelta(margem2t);
+      const margemStatusEl = document.getElementById('val-margem-status');
+      if (margem2t > 0) {
+        margemStatusEl.innerText = 'LULA NA FRENTE';
+        margemStatusEl.className = 'text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+      } else {
+        margemStatusEl.innerText = 'ADV NA FRENTE';
+        margemStatusEl.className = 'text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      }
+
+      const margem1t = d.total_lula_1t - d.total_adv_1t;
+      const deltaMargem = margem2t - margem1t;
+      const deltaMargemEl = document.getElementById('val-delta-margem');
+      deltaMargemEl.innerText = formatDelta(deltaMargem);
+      deltaMargemEl.className = deltaMargem >= 0 ? 'font-mono font-bold text-emerald-400' : 'font-mono font-bold text-red-400';
+
+      document.getElementById('val-total-secoes').innerText = formatNumber(d.total_secoes_pareadas);
+      document.getElementById('val-urnas-virada').innerText = formatNumber(d.total_urnas_virada_lula);
+    }
+
+    function renderCharts(d) {
+      const ctxComparison = document.getElementById('chart-comparison').getContext('2d');
+      if (chartComparison) chartComparison.destroy();
+
+      chartComparison = new Chart(ctxComparison, {
+        type: 'bar',
+        data: {
+          labels: ['1º Turno (1T)', '2º Turno (2T)'],
+          datasets: [
+            {
+              label: 'Lula (13)',
+              data: [d.total_lula_1t, d.total_lula_2t],
+              backgroundColor: 'rgba(239, 68, 68, 0.85)',
+              borderColor: 'rgba(239, 68, 68, 1)',
+              borderWidth: 1,
+              borderRadius: 6,
+            },
+            {
+              label: 'Adversário (22)',
+              data: [d.total_adv_1t, d.total_adv_2t],
+              backgroundColor: 'rgba(59, 130, 246, 0.85)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 1,
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } }
+          },
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      const ctxClass = document.getElementById('chart-classification').getContext('2d');
+      if (chartClassification) chartClassification.destroy();
+
+      chartClassification = new Chart(ctxClass, {
+        type: 'doughnut',
+        data: {
+          labels: ['Virada Lula', 'Virada Adversário', 'Outras Manutenções'],
+          datasets: [{
+            data: [
+              d.total_urnas_virada_lula || 0,
+              d.total_urnas_virada_adv || 0,
+              Math.max(0, d.total_secoes_pareadas - (d.total_urnas_virada_lula + d.total_urnas_virada_adv))
+            ],
+            backgroundColor: [
+              'rgba(16, 185, 129, 0.85)',
+              'rgba(59, 130, 246, 0.85)',
+              'rgba(100, 116, 139, 0.5)'
+            ],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } }
+          }
+        }
+      });
+    }
+
+    function renderUfList(ufList) {
+      const tbody = document.getElementById('tbody-uf-list');
+      const badge = document.getElementById('badge-uf-count');
+      if (badge) badge.innerText = `${ufList.length} UF${ufList.length === 1 ? '' : 's'}`;
+
+      if (!tbody) return;
+      if (!ufList.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-slate-500 font-sans">Nenhuma UF carregada.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = ufList.map(u => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="px-4 py-2.5 font-bold text-emerald-400 font-sans text-sm">${u.sg_uf}</td>
+          <td class="px-4 py-2.5 text-right font-mono">${formatNumber(u.total_secoes)}</td>
+          <td class="px-4 py-2.5 text-right font-mono">${formatNumber(u.votos_lula_1t)}</td>
+          <td class="px-4 py-2.5 text-right font-bold text-white font-mono">${formatNumber(u.votos_lula_2t)}</td>
+          <td class="px-4 py-2.5 text-right font-bold font-mono ${u.delta_votos_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(u.delta_votos_lula)}</td>
+          <td class="px-4 py-2.5 text-right font-bold font-mono ${u.delta_pp_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(u.delta_pp_lula)} pp</td>
+          <td class="px-4 py-2.5 text-right font-mono font-bold ${u.delta_margem >= 0 ? 'text-emerald-400' : 'text-blue-400'}">${formatDelta(u.delta_margem)}</td>
+          <td class="px-4 py-2.5 text-center font-mono font-bold text-emerald-400">${formatNumber(u.total_urnas_virada_lula)}</td>
+          <td class="px-4 py-2.5 text-center font-mono font-bold text-blue-400">${formatNumber(u.total_urnas_virada_adv)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderSwingCities(cities) {
+      const tbody = document.getElementById('tbody-swing-cities');
+      document.getElementById('badge-swing-count').innerText = `${cities.length} cidades detectadas`;
+
+      if (!cities.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-slate-500 font-sans">Nenhuma cidade pêndulo (com reversão de liderança) identificada no recorte atual.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = cities.map(c => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="px-4 py-2.5 font-bold text-slate-400">${c.sg_uf}</td>
+          <td class="px-4 py-2.5 font-sans font-semibold text-white">${c.nm_municipio}</td>
+          <td class="px-4 py-2.5 text-right">${formatNumber(c.votos_lula_1t)}</td>
+          <td class="px-4 py-2.5 text-right font-bold text-white">${formatNumber(c.votos_lula_2t)}</td>
+          <td class="px-4 py-2.5 text-right font-bold ${c.delta_votos_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(c.delta_votos_lula)}</td>
+          <td class="px-4 py-2.5 text-right font-bold ${c.delta_pp_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(c.delta_pp_lula)} pp</td>
+          <td class="px-4 py-2.5 text-right">${formatDelta(c.delta_margem)}</td>
+          <td class="px-4 py-2.5 text-center">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status_virada_municipio === 'VIRADA_LULA' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">
+              ${c.status_virada_municipio}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderSecoes(secoes) {
+      rawSecoesData = secoes;
+      const tbody = document.getElementById('tbody-turnover-sections');
+
+      if (!secoes.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500 font-sans">Nenhuma seção com virada cadastrada.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = secoes.slice(0, 100).map(s => {
+        let badgeClass = 'bg-slate-800 text-slate-400';
+        if (s.classificacao_virada === 'VIRADA_LULA') badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        else if (s.classificacao_virada === 'VIRADA_ADVERSARIO') badgeClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        else if (s.classificacao_virada === 'MANTEVE_LIDERANCA') badgeClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="px-4 py-2.5 text-white font-sans font-medium">${s.nm_municipio} <span class="text-slate-500">(${s.sg_uf})</span></td>
+            <td class="px-4 py-2.5">Z ${s.nr_zona} / S ${s.nr_secao}</td>
+            <td class="px-4 py-2.5 text-right">${s.votos_lula_1t} &rarr; <strong class="text-white">${s.votos_lula_2t}</strong></td>
+            <td class="px-4 py-2.5 text-right">${s.votos_adv_1t} &rarr; <strong class="text-white">${s.votos_adv_2t}</strong></td>
+            <td class="px-4 py-2.5 text-right font-bold ${s.delta_votos_lula >= 0 ? 'text-emerald-400' : 'text-red-400'}">${formatDelta(s.delta_votos_lula)}</td>
+            <td class="px-4 py-2.5 text-right">${formatDelta(s.delta_margem)}</td>
+            <td class="px-4 py-2.5 text-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">
+                ${s.classificacao_virada}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterSecoesTable() {
+      const q = document.getElementById('input-search-secao').value.toLowerCase();
+      const filtered = rawSecoesData.filter(s => 
+        (s.nm_municipio && s.nm_municipio.toLowerCase().includes(q)) ||
+        (s.nr_secao && s.nr_secao.toString().includes(q)) ||
+        (s.nr_zona && s.nr_zona.toString().includes(q))
+      );
+      renderSecoes(filtered);
+    }
+
+    // Inicialização ao carregar página
+    window.addEventListener('DOMContentLoaded', reloadAllData);
+  </script>
+</body>
+</html>
