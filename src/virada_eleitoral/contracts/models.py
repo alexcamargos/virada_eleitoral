@@ -91,6 +91,10 @@ class SectionVotes1T:
         votos_outros: Soma de votos recebidos por terceiros candidatos.
         votos_brancos: Total de votos em branco (95).
         votos_nulos: Total de votos nulos (96).
+        votos_cury: Votos nominais do candidato Cury (opcional, padrão 0).
+        votos_caiado: Votos nominais do candidato Ronaldo Caiado (opcional, padrão 0).
+        votos_renan_zema: Votos de Renan Santos e Romeu Zema (opcional, padrão 0).
+        votos_outros_esquerda: Votos de candidatos menores de esquerda (opcional, padrão 0).
     """
 
     aptos: int
@@ -102,6 +106,10 @@ class SectionVotes1T:
     votos_outros: int
     votos_brancos: int
     votos_nulos: int
+    votos_cury: int = 0
+    votos_caiado: int = 0
+    votos_renan_zema: int = 0
+    votos_outros_esquerda: int = 0
 
 
 @dataclass(slots=True, frozen=True)
@@ -161,6 +169,10 @@ class SectionTurnoverRecord:
         margem_2t: Margem líquida no 2T (Lula - Adversário).
         delta_margem: Variação da margem líquida (2T - 1T).
         classificacao_virada: Classificação categórica da urna.
+        votos_cury_1t: Votos nominais do candidato Cury no 1T (padrão 0).
+        votos_caiado_1t: Votos nominais do candidato Ronaldo Caiado no 1T (padrão 0).
+        votos_renan_zema_1t: Votos de Renan Santos e Romeu Zema no 1T (padrão 0).
+        votos_outros_esquerda_1t: Votos de candidatos menores de esquerda no 1T (padrão 0).
         eficiencia_absorcao_outros: Taxa de atração de votos de terceiros.
     """
 
@@ -191,7 +203,14 @@ class SectionTurnoverRecord:
     margem_2t: int
     delta_margem: int
     classificacao_virada: TurnoverClassification
+    votos_cury_1t: int = 0
+    votos_caiado_1t: int = 0
+    votos_renan_zema_1t: int = 0
+    votos_outros_esquerda_1t: int = 0
     eficiencia_absorcao_outros: float | None = None
+
+
+PairedSection = SectionTurnoverRecord
 
 
 # ==============================================================================
@@ -427,3 +446,136 @@ class EcologicalRegressionScatterPayload(BaseModel):
     regressao: RegressionMetaItem
     pontos_amostra: list[ScatterPointItem]
 
+
+# ==============================================================================
+# Modelos Pydantic v2 dos 4 Pilares Cartográficos Multinível (REQ-EXPO-02, 04)
+# ==============================================================================
+
+
+class CandidatePerformanceDetail(BaseModel):
+    """Detalhes de desempenho eleitoral de um candidato em um estado."""
+
+    model_config = ConfigDict(frozen=True)
+
+    votos_1t: int
+    votos_2t: int
+    delta_nominal: int
+    pct_1t: float = Field(..., ge=0.0, le=100.0)
+    pct_2t: float = Field(..., ge=0.0, le=100.0)
+    delta_pp: float
+
+
+class CandidateStateComparisonItem(BaseModel):
+    """Comparativo de desempenho entre Lula e Flávio em um estado do Sudeste."""
+
+    model_config = ConfigDict(frozen=True)
+
+    sg_uf: str = Field(..., min_length=2, max_length=2)
+    nome_estado: str
+    lula: CandidatePerformanceDetail
+    flavio: CandidatePerformanceDetail
+    razao_crescimento: float
+
+
+class SoutheastDeepDivePayload(BaseModel):
+    """Payload do Geo-Pilar 3: Painel Comparativo dos Grandes Colégios (SP, RJ e MG).
+
+    Comprova que o avanço de Lula no 2T superou em mais que o dobro o crescimento de Flávio.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    titulo: str
+    estados: list[CandidateStateComparisonItem]
+
+
+class ContinuousScaleConfig(BaseModel):
+    """Configuração de escala cromática contínua sequencial para avanço de votos."""
+
+    model_config = ConfigDict(frozen=True)
+
+    min_pp: float = 0.0
+    max_pp: float = 10.0
+    cor_min: str = "#FFFFFF"
+    cor_max: str = "#800000"
+
+
+class DivergingScaleConfig(BaseModel):
+    """Configuração de escala cromática divergente suportando recuo negativo."""
+
+    model_config = ConfigDict(frozen=True)
+
+    tipo: str = "divergente"
+    min_pp: float = -3.0
+    centro_pp: float = 0.0
+    max_pp: float = 6.0
+    cor_recuo: str = "#B22222"
+    cor_neutra: str = "#FFFFFF"
+    cor_avanco: str = "#002060"
+    rotulo_recuo: str = "Flávio recuou (-3 pp)"
+    rotulo_avanco: str = "Flávio avançou (>= +6 pp)"
+
+
+class CapitalHighlightItem(BaseModel):
+    """Metadados de callout para grandes capitais e metrópoles no mapa de bolhas."""
+
+    model_config = ConfigDict(frozen=True)
+
+    cidade: str
+    sg_uf: str = Field(..., min_length=2, max_length=2)
+    delta_pp: float
+    lat: float
+    lon: float
+    aptos: int = Field(..., gt=0)
+    status: str | None = None
+
+
+class BubbleCityItem(BaseModel):
+    """Registro de município individual para renderização de bolhas proporcionais."""
+
+    model_config = ConfigDict(frozen=True)
+
+    cd_ibge: int
+    nm: str
+    uf: str = Field(..., min_length=2, max_length=2)
+    aptos: int = Field(..., ge=0)
+    delta_pp: float
+    lat: float
+    lon: float
+    status_virada: TurnoverClassification | str | None = None
+
+
+class LulaAdvanceBubbleMapPayload(BaseModel):
+    """Payload do Geo-Pilar 4A: Díptico de Bolhas Proporcionais - Avanço de Lula.
+
+    Dimensiona bolhas pelo eleitorado apto em escala contínua de ganho percentual.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    titulo: str
+    metrica_escala: str
+    escala_cores: ContinuousScaleConfig = Field(default_factory=ContinuousScaleConfig)
+    destaques_capitais: list[CapitalHighlightItem]
+    municipios: list[BubbleCityItem]
+
+
+class FlavioPerformanceBubbleMapPayload(BaseModel):
+    """Payload do Geo-Pilar 4B: Díptico de Bolhas Proporcionais - Desempenho de Flávio.
+
+    Dimensiona bolhas pelo eleitorado apto em escala divergente permitindo recuo (< 0 pp).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    ano_eleicao: int = 2026
+    titulo: str
+    metrica_escala: str
+    escala_cores: DivergingScaleConfig = Field(default_factory=DivergingScaleConfig)
+    destaques_capitais: list[CapitalHighlightItem]
+    municipios: list[BubbleCityItem]
+
+
+BubbleMapPayload = LulaAdvanceBubbleMapPayload | FlavioPerformanceBubbleMapPayload
