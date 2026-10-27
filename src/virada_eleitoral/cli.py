@@ -197,6 +197,32 @@ def download(
         f"[bold]{dest_dir}[/bold]."
     )
 
+    # Obtenção e desmembramento do dataset nacional consolidado oficial para 2026
+    if ano == 2026 and turno in (0, 2):
+        console.print(
+            "[bold cyan]Obtendo pacote oficial consolidado de votação "
+            "por seção para Presidente (TSE 2026)...[/bold cyan]"
+        )
+        try:
+            national_bundle = asyncio.run(
+                provider.download_national_bu_dataset(dest_dir=dest_dir, ano=ano)
+            )
+            manifest_mgr.create_and_save_manifest(
+                ano=ano,
+                turno=2,
+                uf="BR",
+                file_path=national_bundle.file_path,
+            )
+            from virada_eleitoral.harvester.local_provider import LocalBuProvider
+
+            unpacked = LocalBuProvider(dest_dir).unpack_national_dataset_if_present(ano=ano)
+            console.print(
+                f"[green]Dataset oficial particionado:[/green] "
+                f"{unpacked} arquivos de BU por UF preparados."
+            )
+        except Exception as e:
+            console.print(f"[yellow]Aviso ao obter dataset nacional oficial do TSE:[/yellow] {e}")
+
 
 @app.command(name="scrape-2t")
 def scrape_2t(
@@ -319,6 +345,11 @@ def normalize(
         f"[bold blue]Iniciando normalização e pareamento (Ano {ano}, UF {uf})...[/bold blue]"
     )
 
+    from virada_eleitoral.harvester.local_provider import LocalBuProvider
+
+    provider = LocalBuProvider(raw_dir)
+    provider.unpack_national_dataset_if_present(ano=ano)
+
     # Localizar pares de arquivos 1T e 2T
     files_1t = sorted(raw_dir.glob("*_1t_*.csv")) + sorted(raw_dir.glob("*_1t_*.zip"))
     files_2t = sorted(raw_dir.glob("*_2t_*.csv")) + sorted(raw_dir.glob("*_2t_*.zip"))
@@ -335,10 +366,7 @@ def normalize(
     if uf.upper() != "ALL":
         ufs_to_process = [u for u in ufs_to_process if u == uf.upper()]
 
-    from virada_eleitoral.harvester.local_provider import LocalBuProvider
-
     total_paired = 0
-    provider = LocalBuProvider(raw_dir)
     extracted_dir = raw_dir / "extracted"
 
     for current_uf in ufs_to_process:
@@ -559,8 +587,11 @@ def run_all(
     export_dir: Annotated[Path, typer.Option(help="Diretório de artefatos estáticos.")] = Path(
         "data/export"
     ),
+    auto_download: Annotated[
+        bool, typer.Option(help="Buscar dados oficiais do TSE caso não existam localmente.")
+    ] = True,
 ) -> None:
-    """Orquestra sequencialmente: normalize -> consolidate -> export -> verify.
+    """Orquestra sequencialmente: harvest -> normalize -> consolidate -> export -> verify.
 
     Args:
         ano: Ano eleitoral analisado (padrão: 2026).
@@ -569,6 +600,7 @@ def run_all(
         processed_dir: Diretório das partições Parquet geradas.
         db_path: Caminho do banco DuckDB consolidado.
         export_dir: Diretório de destino dos artefatos estáticos JSON e Wasm.
+        auto_download: Se verdadeiro, busca dados no TSE se faltarem arquivos locais.
 
     Returns:
         None
@@ -577,6 +609,29 @@ def run_all(
         typer.Exit: Caso nenhuma seção seja pareada durante a normalização.
     """
     console.print("[bold green]=== INICIANDO PIPELINE COMPLETO VIRADA ELEITORAL ===[/bold green]")
+
+    from virada_eleitoral.harvester.local_provider import LocalBuProvider
+
+    provider = LocalBuProvider(raw_dir)
+    provider.unpack_national_dataset_if_present(ano=ano)
+
+    files_1t = list(raw_dir.glob("*_1t_*.csv")) + list(raw_dir.glob("*_1t_*.zip"))
+    files_2t = list(raw_dir.glob("*_2t_*.csv")) + list(raw_dir.glob("*_2t_*.zip"))
+
+    # Se não houver arquivos brutos locais e auto_download=True, consultar TSE
+    if (not files_1t or not files_2t) and auto_download:
+        console.print(
+            "[bold yellow]Detectada necessidade de dados do TSE. "
+            "Acionando coleta oficial...[/bold yellow]"
+        )
+        try:
+            download(ano=ano, uf=uf, turno=0, dest_dir=raw_dir)
+        except Exception as e:
+            console.print(f"[yellow]Aviso na coleta automática do TSE:[/yellow] {e}")
+
+    # Registrar arquivos no manifesto
+    harvest(ano=ano, input_dir=raw_dir, manifest_dir=raw_dir)
+
     paired_count = normalize(ano=ano, uf=uf, raw_dir=raw_dir, processed_dir=processed_dir)
     if paired_count == 0:
         console.print(
