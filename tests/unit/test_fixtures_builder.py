@@ -9,11 +9,18 @@ from pathlib import Path
 import pytest
 
 from tests.fixtures.builder import (
+    ANO_ELEICAO_PADRAO,
+    NR_VOTAVEL_CAIADO,
+    NR_VOTAVEL_CURY,
+    NR_VOTAVEL_FLAVIO,
+    NR_VOTAVEL_LULA,
+    NR_VOTAVEL_RENAN_ZEMA,
     TSE_BU_CSV_HEADER,
     build_synthetic_bu_dataset,
     generate_bu_csv,
     get_all_golden_fixtures,
     get_golden_fixture,
+    get_nanuque_fixture,
 )
 from virada_eleitoral.contracts.models import PairingStatus, TurnoverClassification
 
@@ -69,3 +76,39 @@ def test_build_synthetic_bu_dataset(tmp_path: Path) -> None:
     assert path_2t.exists()
     assert path_1t.stat().st_size > 0
     assert path_2t.stat().st_size > 0
+
+
+def test_nanuque_fixture_metrics() -> None:
+    """Valida as métricas eleitorais e atributos da fixture de Nanuque/MG (2026)."""
+    nanuque = get_nanuque_fixture()
+    assert nanuque.fixture_id == "FX-NANUQUE"
+    assert nanuque.expected_classification == TurnoverClassification.VIRADA_LULA
+    assert nanuque.expected_status_pareamento == PairingStatus.PAREADA_AMBOS
+    assert nanuque.expected_delta_votos_lula == 1344
+    assert nanuque.expected_delta_margem == 976
+
+    # Validar código TSE e SG_UF nas linhas do 1T
+    assert nanuque.rows_1t[0]["SG_UF"] == "MG"
+    assert nanuque.rows_1t[0]["CD_MUNICIPIO"] == 48852
+    assert nanuque.rows_1t[0]["NM_MUNICIPIO"] == "NANUQUE"
+
+
+def test_build_synthetic_dataset_with_nanuque(tmp_path: Path) -> None:
+    """Verifica a inclusão de Nanuque no conjunto sintético consolidado."""
+    path_1t, path_2t = build_synthetic_bu_dataset(tmp_path, include_nanuque=True)
+    assert path_1t.exists()
+    assert path_2t.exists()
+
+    with path_1t.open("r", encoding="iso-8859-1") as f:
+        content_1t = f.read()
+    assert "NANUQUE" in content_1t
+
+
+def test_presidential_2026_candidate_numbers() -> None:
+    """Garante que as constantes dos candidatos de 2026 estão configuradas."""
+    assert ANO_ELEICAO_PADRAO == 2026
+    assert NR_VOTAVEL_LULA == 13
+    assert NR_VOTAVEL_FLAVIO == 22
+    assert NR_VOTAVEL_CURY == 45
+    assert NR_VOTAVEL_CAIADO == 44
+    assert NR_VOTAVEL_RENAN_ZEMA == 30

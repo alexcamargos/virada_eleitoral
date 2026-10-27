@@ -26,6 +26,17 @@ TSE_BU_CSV_HEADER = [
     "QT_ABSTENCAO",
 ]
 
+# Mapeamento canônico dos números de votáveis para as Eleições Presidenciais de 2026
+NR_VOTAVEL_LULA = 13
+NR_VOTAVEL_FLAVIO = 22
+NR_VOTAVEL_CURY = 45
+NR_VOTAVEL_CAIADO = 44
+NR_VOTAVEL_RENAN_ZEMA = 30
+NR_VOTAVEL_OUTROS_ESQUERDA = 50
+NR_VOTAVEL_BRANCO = 95
+NR_VOTAVEL_NULO = 96
+ANO_ELEICAO_PADRAO = 2026
+
 
 @dataclass(slots=True, frozen=True)
 class GoldenFixture:
@@ -114,7 +125,15 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "SAO PAULO",
         1,
         101,
-        {13: 120, 22: 80, 15: 20, 12: 10, 95: 10, 96: 10},
+        {
+            NR_VOTAVEL_LULA: 120,
+            NR_VOTAVEL_FLAVIO: 80,
+            NR_VOTAVEL_CURY: 15,
+            NR_VOTAVEL_CAIADO: 10,
+            NR_VOTAVEL_RENAN_ZEMA: 5,
+            NR_VOTAVEL_BRANCO: 10,
+            NR_VOTAVEL_NULO: 10,
+        },
         aptos=300,
         comparecimento=250,
         abstencao=50,
@@ -125,7 +144,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "SAO PAULO",
         1,
         101,
-        {13: 140, 22: 90, 95: 12, 96: 8},
+        {
+            NR_VOTAVEL_LULA: 140,
+            NR_VOTAVEL_FLAVIO: 90,
+            NR_VOTAVEL_BRANCO: 12,
+            NR_VOTAVEL_NULO: 8,
+        },
         aptos=300,
         comparecimento=250,
         abstencao=50,
@@ -148,7 +172,15 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "BELO HORIZONTE",
         1,
         102,
-        {13: 90, 22: 130, 15: 25, 12: 15, 95: 10, 96: 10},
+        {
+            NR_VOTAVEL_LULA: 90,
+            NR_VOTAVEL_FLAVIO: 130,
+            NR_VOTAVEL_CURY: 20,
+            NR_VOTAVEL_CAIADO: 15,
+            NR_VOTAVEL_RENAN_ZEMA: 5,
+            NR_VOTAVEL_BRANCO: 10,
+            NR_VOTAVEL_NULO: 10,
+        },
         aptos=330,
         comparecimento=280,
         abstencao=50,
@@ -159,7 +191,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "BELO HORIZONTE",
         1,
         102,
-        {13: 145, 22: 115, 95: 12, 96: 8},
+        {
+            NR_VOTAVEL_LULA: 145,
+            NR_VOTAVEL_FLAVIO: 115,
+            NR_VOTAVEL_BRANCO: 12,
+            NR_VOTAVEL_NULO: 8,
+        },
         aptos=330,
         comparecimento=280,
         abstencao=50,
@@ -182,7 +219,15 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "CURITIBA",
         1,
         103,
-        {13: 110, 22: 100, 15: 12, 12: 8, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 110,
+            NR_VOTAVEL_FLAVIO: 100,
+            NR_VOTAVEL_CURY: 10,
+            NR_VOTAVEL_CAIADO: 6,
+            NR_VOTAVEL_OUTROS_ESQUERDA: 4,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=280,
         comparecimento=240,
         abstencao=40,
@@ -193,7 +238,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "CURITIBA",
         1,
         103,
-        {13: 112, 22: 118, 95: 6, 96: 4},
+        {
+            NR_VOTAVEL_LULA: 112,
+            NR_VOTAVEL_FLAVIO: 118,
+            NR_VOTAVEL_BRANCO: 6,
+            NR_VOTAVEL_NULO: 4,
+        },
         aptos=280,
         comparecimento=240,
         abstencao=40,
@@ -216,7 +266,15 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FLORIANOPOLIS",
         1,
         104,
-        {13: 70, 22: 140, 15: 15, 12: 5, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 70,
+            NR_VOTAVEL_FLAVIO: 140,
+            NR_VOTAVEL_CURY: 10,
+            NR_VOTAVEL_CAIADO: 5,
+            NR_VOTAVEL_RENAN_ZEMA: 5,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=280,
         comparecimento=240,
         abstencao=40,
@@ -227,7 +285,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FLORIANOPOLIS",
         1,
         104,
-        {13: 80, 22: 150, 95: 6, 96: 4},
+        {
+            NR_VOTAVEL_LULA: 80,
+            NR_VOTAVEL_FLAVIO: 150,
+            NR_VOTAVEL_BRANCO: 6,
+            NR_VOTAVEL_NULO: 4,
+        },
         aptos=280,
         comparecimento=240,
         abstencao=40,
@@ -250,7 +313,14 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "SALVADOR",
         1,
         105,
-        {13: 50, 22: 40, 15: 5, 12: 5, 95: 2, 96: 2},
+        {
+            NR_VOTAVEL_LULA: 50,
+            NR_VOTAVEL_FLAVIO: 40,
+            NR_VOTAVEL_CURY: 5,
+            NR_VOTAVEL_CAIADO: 5,
+            NR_VOTAVEL_BRANCO: 2,
+            NR_VOTAVEL_NULO: 2,
+        },
         aptos=120,
         comparecimento=104,
         abstencao=16,
@@ -273,7 +343,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "SALVADOR",
         1,
         106,
-        {13: 60, 22: 50, 95: 3, 96: 2},
+        {
+            NR_VOTAVEL_LULA: 60,
+            NR_VOTAVEL_FLAVIO: 50,
+            NR_VOTAVEL_BRANCO: 3,
+            NR_VOTAVEL_NULO: 2,
+        },
         aptos=140,
         comparecimento=115,
         abstencao=25,
@@ -296,7 +371,14 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FORTALEZA",
         1,
         107,
-        {13: 70, 22: 80, 12: 35, 15: 25, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 70,
+            NR_VOTAVEL_FLAVIO: 80,
+            NR_VOTAVEL_CURY: 35,
+            NR_VOTAVEL_CAIADO: 25,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=280,
         comparecimento=220,
         abstencao=60,
@@ -307,14 +389,19 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "FORTALEZA",
         1,
         107,
-        {13: 120, 22: 90, 95: 6, 96: 4},
+        {
+            NR_VOTAVEL_LULA: 120,
+            NR_VOTAVEL_FLAVIO: 90,
+            NR_VOTAVEL_BRANCO: 6,
+            NR_VOTAVEL_NULO: 4,
+        },
         aptos=280,
         comparecimento=220,
         abstencao=60,
     )
     fixtures["FX-07"] = GoldenFixture(
         fixture_id="FX-07",
-        description="Alta absorção de votos de terceiros colocados (Ciro/Tebet)",
+        description="Alta absorção de votos de terceiros colocados (Cury/Caiado 2026)",
         expected_classification=TurnoverClassification.VIRADA_LULA,
         expected_status_pareamento=PairingStatus.PAREADA_AMBOS,
         expected_delta_votos_lula=50,
@@ -330,7 +417,14 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "RIO DE JANEIRO",
         1,
         108,
-        {13: 100, 22: 100, 15: 10, 12: 10, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 100,
+            NR_VOTAVEL_FLAVIO: 100,
+            NR_VOTAVEL_CURY: 10,
+            NR_VOTAVEL_RENAN_ZEMA: 10,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=270,
         comparecimento=230,
         abstencao=40,
@@ -341,7 +435,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "RIO DE JANEIRO",
         1,
         108,
-        {13: 115, 22: 105, 95: 6, 96: 4},
+        {
+            NR_VOTAVEL_LULA: 115,
+            NR_VOTAVEL_FLAVIO: 105,
+            NR_VOTAVEL_BRANCO: 6,
+            NR_VOTAVEL_NULO: 4,
+        },
         aptos=270,
         comparecimento=230,
         abstencao=40,
@@ -364,7 +463,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "MANAUS",
         1,
         109,
-        {13: 0, 22: 0, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 0,
+            NR_VOTAVEL_FLAVIO: 0,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=20,
         comparecimento=10,
         abstencao=10,
@@ -375,7 +479,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "MANAUS",
         1,
         109,
-        {13: 2, 22: 0, 95: 4, 96: 4},
+        {
+            NR_VOTAVEL_LULA: 2,
+            NR_VOTAVEL_FLAVIO: 0,
+            NR_VOTAVEL_BRANCO: 4,
+            NR_VOTAVEL_NULO: 4,
+        },
         aptos=20,
         comparecimento=10,
         abstencao=10,
@@ -398,7 +507,15 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "CIDADE PENDULO",
         1,
         110,
-        {13: 150, 22: 170, 15: 30, 95: 10, 96: 10},
+        {
+            NR_VOTAVEL_LULA: 150,
+            NR_VOTAVEL_FLAVIO: 170,
+            NR_VOTAVEL_CURY: 15,
+            NR_VOTAVEL_CAIADO: 10,
+            NR_VOTAVEL_RENAN_ZEMA: 5,
+            NR_VOTAVEL_BRANCO: 10,
+            NR_VOTAVEL_NULO: 10,
+        },
         aptos=420,
         comparecimento=370,
         abstencao=50,
@@ -409,7 +526,12 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
         "CIDADE PENDULO",
         1,
         110,
-        {13: 200, 22: 160, 95: 5, 96: 5},
+        {
+            NR_VOTAVEL_LULA: 200,
+            NR_VOTAVEL_FLAVIO: 160,
+            NR_VOTAVEL_BRANCO: 5,
+            NR_VOTAVEL_NULO: 5,
+        },
         aptos=420,
         comparecimento=370,
         abstencao=50,
@@ -426,6 +548,62 @@ def get_all_golden_fixtures() -> dict[str, GoldenFixture]:
     )
 
     return fixtures
+
+
+def get_nanuque_fixture() -> GoldenFixture:
+    """Retorna o cenário áureo de aceitação canônico para o município de Nanuque/MG (2026).
+
+    No 1T Flávio liderou com 48,54% vs 46,87% de Lula.
+    No 2T Lula venceu com 51,33% vs 48,67% de Flávio, com avanço de +4,46 pp.
+
+    Returns:
+        GoldenFixture: Fixture de Nanuque/MG com métricas exatas do BDD.
+    """
+    nanuque_1t = _create_bu_rows(
+        "MG",
+        48852,
+        "NANUQUE",
+        1,
+        201,
+        {
+            NR_VOTAVEL_LULA: 10359,
+            NR_VOTAVEL_FLAVIO: 10729,
+            NR_VOTAVEL_CURY: 550,
+            NR_VOTAVEL_CAIADO: 300,
+            NR_VOTAVEL_RENAN_ZEMA: 162,
+            NR_VOTAVEL_BRANCO: 500,
+            NR_VOTAVEL_NULO: 400,
+        },
+        aptos=31200,
+        comparecimento=23000,
+        abstencao=8200,
+    )
+    nanuque_2t = _create_bu_rows(
+        "MG",
+        48852,
+        "NANUQUE",
+        1,
+        201,
+        {
+            NR_VOTAVEL_LULA: 11703,
+            NR_VOTAVEL_FLAVIO: 11097,
+            NR_VOTAVEL_BRANCO: 400,
+            NR_VOTAVEL_NULO: 350,
+        },
+        aptos=31200,
+        comparecimento=23550,
+        abstencao=7650,
+    )
+    return GoldenFixture(
+        fixture_id="FX-NANUQUE",
+        description="Virada canônica em Nanuque/MG (1T: 46,87% vs 48,54%; 2T: 51,33% vs 48,67%)",
+        expected_classification=TurnoverClassification.VIRADA_LULA,
+        expected_status_pareamento=PairingStatus.PAREADA_AMBOS,
+        expected_delta_votos_lula=1344,
+        expected_delta_margem=976,
+        rows_1t=nanuque_1t,
+        rows_2t=nanuque_2t,
+    )
 
 
 def get_golden_fixture(fixture_id: str) -> GoldenFixture:
@@ -469,11 +647,12 @@ def generate_bu_csv(rows: list[dict[str, Any]], out_path: Path) -> Path:
     return out_path
 
 
-def build_synthetic_bu_dataset(out_dir: Path) -> tuple[Path, Path]:
+def build_synthetic_bu_dataset(out_dir: Path, include_nanuque: bool = False) -> tuple[Path, Path]:
     """Materializa o conjunto sintético consolidado de 1T e 2T das 10 fixtures áureas.
 
     Args:
         out_dir: Diretório onde os arquivos CSV serão criados.
+        include_nanuque: Se True, inclui também a seção áurea de Nanuque/MG (FX-NANUQUE).
 
     Returns:
         tuple[Path, Path]: Par de caminhos para os arquivos (bweb_1t_TEST.csv, bweb_2t_TEST.csv).
@@ -485,6 +664,11 @@ def build_synthetic_bu_dataset(out_dir: Path) -> tuple[Path, Path]:
     for fix in fixtures.values():
         all_1t_rows.extend(fix.rows_1t)
         all_2t_rows.extend(fix.rows_2t)
+
+    if include_nanuque:
+        nanuque = get_nanuque_fixture()
+        all_1t_rows.extend(nanuque.rows_1t)
+        all_2t_rows.extend(nanuque.rows_2t)
 
     path_1t = out_dir / "bweb_1t_TEST.csv"
     path_2t = out_dir / "bweb_2t_TEST.csv"
