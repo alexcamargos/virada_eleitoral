@@ -1250,19 +1250,64 @@
             <p class="text-xs text-slate-400 mt-1">Busque por qualquer município, zona ou seção auditada individualmente entre os turnos.</p>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2.5 flex-wrap">
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-              <input type="text" id="input-search-secao" placeholder="Buscar município, UF ou seção..." onkeyup="filterSecoesTable()"
-                     class="pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64">
+              <input type="text" id="input-search-secao" placeholder="Buscar município, UF ou seção..." oninput="onSecaoSearchInput()"
+                     class="pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64 bg-[#14171C] border border-[#282D37] rounded focus:border-sky-400 focus:outline-none">
             </div>
-            <select id="select-filter-classification" onchange="filterSecoesTable()" class="text-xs text-slate-300 px-2.5 py-1.5">
+            <select id="select-filter-uf" onchange="filterSecoesTable()" class="text-xs text-slate-300 px-2.5 py-1.5 bg-[#14171C] border border-[#282D37] rounded focus:border-sky-400 focus:outline-none">
+              <option value="">Todas as UFs</option>
+              <option value="AC">AC</option>
+              <option value="AL">AL</option>
+              <option value="AM">AM</option>
+              <option value="AP">AP</option>
+              <option value="BA">BA</option>
+              <option value="CE">CE</option>
+              <option value="DF">DF</option>
+              <option value="ES">ES</option>
+              <option value="GO">GO</option>
+              <option value="MA">MA</option>
+              <option value="MG">MG</option>
+              <option value="MS">MS</option>
+              <option value="MT">MT</option>
+              <option value="PA">PA</option>
+              <option value="PB">PB</option>
+              <option value="PE">PE</option>
+              <option value="PI">PI</option>
+              <option value="PR">PR</option>
+              <option value="RJ">RJ</option>
+              <option value="RN">RN</option>
+              <option value="RO">RO</option>
+              <option value="RR">RR</option>
+              <option value="RS">RS</option>
+              <option value="SC">SC</option>
+              <option value="SE">SE</option>
+              <option value="SP">SP</option>
+              <option value="TO">TO</option>
+              <option value="ZZ">ZZ (Exterior)</option>
+            </select>
+            <select id="select-filter-classification" onchange="filterSecoesTable()" class="text-xs text-slate-300 px-2.5 py-1.5 bg-[#14171C] border border-[#282D37] rounded focus:border-sky-400 focus:outline-none">
               <option value="">Todas as Classificações</option>
               <option value="VIRADA_LULA">VIRADA_LULA</option>
               <option value="VIRADA_ADVERSARIO">VIRADA_ADVERSARIO</option>
               <option value="MANTEVE_LIDERANCA">MANTEVE_LIDERANCA</option>
+              <option value="MANTEVE_DESVANTAGEM">MANTEVE_DESVANTAGEM</option>
+              <option value="EMPATE">EMPATE</option>
             </select>
+            <button onclick="clearSecaoSearch()" class="px-2.5 py-1.5 text-xs text-slate-400 hover:text-white bg-[#14171C] hover:bg-[#20242C] border border-[#282D37] rounded transition flex items-center gap-1.5" title="Limpar busca">
+              <i class="fa-solid fa-rotate-left text-[10px]"></i> Limpar
+            </button>
           </div>
+        </div>
+
+        <!-- Banner com status da busca / cidade auditada -->
+        <div id="secao-search-banner" class="flex items-center justify-between text-xs px-3 py-2 bg-[#14171C] border border-[#282D37] rounded text-slate-300 flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span id="secao-status-indicator" class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <span id="secao-status-text">Exibindo as 100 maiores viradas nacionais. Digite o nome de qualquer cidade (ex: <em>Capelinha</em>) para auditar todas as suas seções.</span>
+          </div>
+          <span id="secao-total-count" class="font-mono text-slate-400 shrink-0">1.000 seções no índice inicial</span>
         </div>
 
         <!-- Bloco de Condução de Auditoria de Microdados -->
@@ -1423,6 +1468,8 @@
           renderTopSwingCitiesChart();
         } else if (tabId === 'diptych') {
           renderCapitalsChart();
+        } else if (tabId === 'sections') {
+          filterSecoesTable();
         }
       }, 50);
     }
@@ -2226,17 +2273,21 @@
         selectedUfFilter = uf;
         document.getElementById('btn-clear-uf-filter').classList.remove('hidden');
       }
+      const ufSelect = document.getElementById('select-filter-uf');
+      if (ufSelect) ufSelect.value = selectedUfFilter || '';
       renderUfGrid();
       renderUfTable();
-      renderSecoesTable();
+      filterSecoesTable();
     }
 
     function clearStateFilter() {
       selectedUfFilter = null;
       document.getElementById('btn-clear-uf-filter').classList.add('hidden');
+      const ufSelect = document.getElementById('select-filter-uf');
+      if (ufSelect) ufSelect.value = '';
       renderUfGrid();
       renderUfTable();
-      renderSecoesTable();
+      filterSecoesTable();
     }
 
     function renderUfTable() {
@@ -2626,23 +2677,259 @@
     }
 
     // ----------------------------------------------------
-    // ABA 6: AUDITORIA DE URNAS
+    // ABA 6: AUDITORIA DE URNAS (MICRODADOS DINÂMICOS & DUCKDB-WASM)
     // ----------------------------------------------------
+    let secaoSearchTimeout = null;
+    let wasmClient = null;
+    let wasmLoading = false;
+
+    function onSecaoSearchInput() {
+      clearTimeout(secaoSearchTimeout);
+      secaoSearchTimeout = setTimeout(() => {
+        filterSecoesTable();
+      }, 250);
+    }
+
+    function clearSecaoSearch() {
+      const input = document.getElementById('input-search-secao');
+      if (input) input.value = '';
+      const cat = document.getElementById('select-filter-classification');
+      if (cat) cat.value = '';
+      const uf = document.getElementById('select-filter-uf');
+      if (uf) uf.value = '';
+      filterSecoesTable();
+    }
+
+    function findUfForSearch(query) {
+      if (!query) return null;
+      const q = query.trim().toLowerCase();
+      // 1. Verifica se a busca é diretamente uma sigla de UF
+      const ufExact = (globalData.ufList || []).find(u => u.sg_uf.toLowerCase() === q);
+      if (ufExact) return ufExact.sg_uf;
+
+      // 2. Busca nos municípios carregados do mapa de bolhas
+      const muns = (globalData.lulaBubbles && globalData.lulaBubbles.municipios) || [];
+      const mMatch = muns.find(m => m.nm && m.nm.toLowerCase().includes(q));
+      if (mMatch) return mMatch.uf;
+
+      // 3. Busca nas swing cities
+      const swingMatch = (globalData.swingCities || []).find(s => s.nm_municipio && s.nm_municipio.toLowerCase().includes(q));
+      if (swingMatch) return swingMatch.sg_uf;
+
+      return null;
+    }
+
+    async function getWasmClient() {
+      if (wasmClient) return wasmClient;
+      if (wasmLoading) return null;
+      wasmLoading = true;
+      try {
+        const duckdb = await import('https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm');
+        const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+        const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+        const workerBlob = new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+        const worker = new Worker(workerUrl);
+        const logger = new duckdb.ConsoleLogger();
+        const db = new duckdb.AsyncDuckDB(logger, worker);
+        await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        const conn = await db.connect();
+        wasmClient = { db, conn };
+        return wasmClient;
+      } catch (err) {
+        console.warn("DuckDB-Wasm indisponível via CDN:", err);
+        return null;
+      } finally {
+        wasmLoading = false;
+      }
+    }
+
+    async function queryWasmSections(uf, queryText, classification) {
+      if (!uf) return null;
+      const client = await getWasmClient();
+      if (!client) return null;
+
+      const tableName = `sections_${uf}`;
+      try {
+        const testQuery = await client.conn.query(`SELECT 1 FROM "${tableName}" LIMIT 1`).catch(() => null);
+        if (!testQuery) {
+          const candidates = [
+            `../data/export/wasm/sections_${uf}.parquet`,
+            `./data/export/wasm/sections_${uf}.parquet`,
+            `/data/export/wasm/sections_${uf}.parquet`,
+            `data/export/wasm/sections_${uf}.parquet`,
+            `../export/wasm/sections_${uf}.parquet`,
+            `./export/wasm/sections_${uf}.parquet`,
+            `/export/wasm/sections_${uf}.parquet`,
+            `export/wasm/sections_${uf}.parquet`,
+            `./wasm/sections_${uf}.parquet`,
+            `wasm/sections_${uf}.parquet`
+          ];
+          let buffer = null;
+          for (const path of candidates) {
+            try {
+              const res = await fetch(path);
+              if (res.ok) {
+                buffer = await res.arrayBuffer();
+                break;
+              }
+            } catch (_) {}
+          }
+          if (!buffer) return null;
+          await client.db.registerFileBuffer(`${tableName}.parquet`, new Uint8Array(buffer));
+          await client.conn.query(`CREATE VIEW "${tableName}" AS SELECT * FROM read_parquet('${tableName}.parquet');`);
+        }
+
+        let sql = `SELECT sg_uf, cd_municipio, nm_municipio, nr_zona, nr_secao, votos_lula_1t, votos_adv_1t, votos_lula_2t, votos_adv_2t, delta_votos_lula, delta_pp_lula, delta_margem, classificacao_virada FROM "${tableName}" WHERE 1=1`;
+        if (classification) {
+          sql += ` AND classificacao_virada = '${classification.replace(/'/g, "''")}'`;
+        }
+        if (queryText) {
+          const qEscaped = queryText.trim().replace(/'/g, "''").toLowerCase();
+          sql += ` AND (lower(nm_municipio) LIKE '%${qEscaped}%' OR CAST(nr_secao AS VARCHAR) = '${qEscaped}' OR CAST(nr_zona AS VARCHAR) = '${qEscaped}')`;
+        }
+        sql += ` ORDER BY CASE WHEN lower(nm_municipio) = '${(queryText||'').trim().toLowerCase().replace(/'/g, "''")}' THEN 0 ELSE 1 END, ABS(delta_margem) DESC, delta_votos_lula DESC, nr_zona, nr_secao LIMIT 500;`;
+
+        const arrowTable = await client.conn.query(sql);
+        return arrowTable.toArray().map(r => r.toJSON());
+      } catch (e) {
+        console.warn("Erro na consulta Wasm:", e);
+        return null;
+      }
+    }
+
+    async function filterSecoesTable() {
+      const qInput = document.getElementById('input-search-secao');
+      const q = (qInput ? qInput.value : '').trim();
+      const catSelect = document.getElementById('select-filter-classification');
+      const cat = catSelect ? catSelect.value : '';
+      const ufSelect = document.getElementById('select-filter-uf');
+      let uf = (ufSelect && ufSelect.value) ? ufSelect.value : (selectedUfFilter || '');
+
+      const statusIndicator = document.getElementById('secao-status-indicator');
+      const statusText = document.getElementById('secao-status-text');
+      const countEl = document.getElementById('secao-total-count');
+
+      // Se não há filtro de texto nem de UF ou classificação, exibe snapshot inicial
+      if (!q && !cat && !uf) {
+        if (statusIndicator) statusIndicator.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (statusText) statusText.innerHTML = 'Exibindo as 100 maiores viradas nacionais. Digite o nome de qualquer cidade (ex: <em>Capelinha</em>) para auditar todas as suas seções.';
+        if (countEl) countEl.innerText = `${formatNumber((globalData.topUrnas || []).length)} seções no índice inicial`;
+        renderSecoesTable(globalData.topUrnas || []);
+        return;
+      }
+
+      if (statusIndicator) statusIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-spin";
+      if (statusText) statusText.innerText = "Consultando banco de dados de urnas...";
+
+      // 1. Tentativa via API Local do servidor (/api/sections)
+      try {
+        const urlParams = new URLSearchParams();
+        if (q) urlParams.append('q', q);
+        if (uf) urlParams.append('uf', uf);
+        if (cat) urlParams.append('classificacao', cat);
+        urlParams.append('limit', '500');
+
+        const apiRes = await fetch(`/api/sections?${urlParams.toString()}`);
+        if (apiRes.ok) {
+          const rows = await apiRes.json();
+          if (Array.isArray(rows)) {
+            updateSearchStatus(rows, q, uf);
+            renderSecoesTable(rows);
+            return;
+          }
+        }
+      } catch (_) {
+        // Se a API não estiver disponível (ex: hospedagem estática pura), continua para Wasm
+      }
+
+      // 2. Tentativa via DuckDB-Wasm (Jamstack Client-Side)
+      const targetUf = uf || findUfForSearch(q);
+      if (targetUf) {
+        if (statusText) statusText.innerText = `Processando partição Parquet de ${targetUf} via DuckDB-Wasm...`;
+        const wasmRows = await queryWasmSections(targetUf, q, cat);
+        if (wasmRows && Array.isArray(wasmRows) && wasmRows.length > 0) {
+          updateSearchStatus(wasmRows, q, targetUf);
+          renderSecoesTable(wasmRows);
+          return;
+        }
+      }
+
+      // 3. Fallback em memória (globalData.topUrnas)
+      let filtered = globalData.topUrnas || [];
+      if (uf) {
+        filtered = filtered.filter(s => s.sg_uf === uf);
+      }
+      if (cat) {
+        filtered = filtered.filter(s => s.classificacao_virada === cat);
+      }
+      if (q) {
+        const qLower = q.toLowerCase();
+        filtered = filtered.filter(s =>
+          (s.nm_municipio && s.nm_municipio.toLowerCase().includes(qLower)) ||
+          (s.sg_uf && s.sg_uf.toLowerCase() === qLower) ||
+          (s.nr_secao && s.nr_secao.toString() === qLower) ||
+          (s.nr_zona && s.nr_zona.toString() === qLower)
+        );
+      }
+
+      updateSearchStatus(filtered, q, uf);
+      renderSecoesTable(filtered);
+    }
+
+    function updateSearchStatus(rows, q, uf) {
+      const statusIndicator = document.getElementById('secao-status-indicator');
+      const statusText = document.getElementById('secao-status-text');
+      const countEl = document.getElementById('secao-total-count');
+
+      if (!rows || !rows.length) {
+        if (statusIndicator) statusIndicator.className = "w-2 h-2 rounded-full bg-red-400";
+        if (statusText) statusText.innerText = `Nenhuma urna localizada para "${q || uf || 'os filtros selecionados'}". Tente selecionar o estado ou verificar a grafia.`;
+        if (countEl) countEl.innerText = "0 seções";
+        return;
+      }
+
+      if (statusIndicator) statusIndicator.className = "w-2 h-2 rounded-full bg-emerald-400";
+      if (countEl) countEl.innerText = `${formatNumber(rows.length)} seções exibidas`;
+
+      const firstCity = rows[0]?.nm_municipio;
+      const isSingleCity = rows.every(r => r.nm_municipio === firstCity);
+
+      if (isSingleCity && firstCity) {
+        const viradasLula = rows.filter(r => r.classificacao_virada === 'VIRADA_LULA').length;
+        const mantLid = rows.filter(r => r.classificacao_virada === 'MANTEVE_LIDERANCA').length;
+        const mantDesv = rows.filter(r => r.classificacao_virada === 'MANTEVE_DESVANTAGEM').length;
+        const viradasAdv = rows.filter(r => r.classificacao_virada === 'VIRADA_ADVERSARIO').length;
+        if (statusText) {
+          statusText.innerHTML = `<strong>${firstCity} (${rows[0].sg_uf})</strong>: <strong>${rows.length}</strong> seções auditadas &bull; <span class="text-emerald-400 font-bold">${viradasLula} Viradas Lula</span> &bull; <span class="text-sky-300">${mantLid} Manteve Liderança</span> &bull; <span class="text-slate-400">${mantDesv} Manteve Desvantagem</span>${viradasAdv > 0 ? ` &bull; <span class="text-red-400">${viradasAdv} Viradas Adv</span>` : ''}`;
+        }
+      } else {
+        if (statusText) {
+          statusText.innerText = `${rows.length} urnas localizadas ${q ? `para busca "${q}"` : ''} ${uf ? `no estado ${uf}` : ''}.`;
+        }
+      }
+    }
+
     function renderSecoesTable(filteredData) {
       const tbody = document.getElementById('tbody-turnover-sections');
       if (!tbody) return;
 
       let secoes = filteredData || globalData.topUrnas || [];
-      if (selectedUfFilter) {
-        secoes = secoes.filter(s => s.sg_uf === selectedUfFilter);
-      }
 
       if (!secoes.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500 font-sans">Nenhuma seção localizada para os critérios de busca.</td></tr>`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-slate-400 font-sans">
+              <i class="fa-solid fa-circle-exclamation text-amber-400 mr-2 text-base"></i>
+              Nenhuma seção localizada para os critérios de busca.<br>
+              <span class="text-xs text-slate-500 mt-1 block">Dica: verifique a grafia do município ou selecione a UF no seletor para auditar as urnas do estado.</span>
+            </td>
+          </tr>
+        `;
         return;
       }
 
-      tbody.innerHTML = secoes.slice(0, 100).map(s => {
+      tbody.innerHTML = secoes.slice(0, 500).map(s => {
         let badgeHtml = '<span class="hero-pill font-mono text-[10px]">' + s.classificacao_virada + '</span>';
         if (s.classificacao_virada === 'VIRADA_LULA') {
           badgeHtml = '<span class="hero-pill hero-pill-highlight font-mono text-[10px]">VIRADA_LULA</span>';
@@ -2650,6 +2937,10 @@
           badgeHtml = '<span class="hero-pill font-mono text-[10px]" style="border-color: #3B82F6; color: #93C5FD;">VIRADA_ADVERSARIO</span>';
         } else if (s.classificacao_virada === 'MANTEVE_LIDERANCA') {
           badgeHtml = '<span class="hero-pill hero-pill-tie font-mono text-[10px]">MANTEVE_LIDERANCA</span>';
+        } else if (s.classificacao_virada === 'MANTEVE_DESVANTAGEM') {
+          badgeHtml = '<span class="hero-pill font-mono text-[10px]" style="border-color: #475569; color: #94A3B8;">MANTEVE_DESVANTAGEM</span>';
+        } else if (s.classificacao_virada === 'EMPATE') {
+          badgeHtml = '<span class="hero-pill font-mono text-[10px]" style="border-color: #F59E0B; color: #FCD34D;">EMPATE</span>';
         }
 
         return `
@@ -2666,27 +2957,14 @@
       }).join('');
     }
 
-    function filterSecoesTable() {
-      const q = (document.getElementById('input-search-secao').value || '').toLowerCase();
-      const cat = document.getElementById('select-filter-classification').value;
-
-      let filtered = globalData.topUrnas || [];
-      if (selectedUfFilter) {
-        filtered = filtered.filter(s => s.sg_uf === selectedUfFilter);
-      }
-      if (cat) {
-        filtered = filtered.filter(s => s.classificacao_virada === cat);
-      }
-      if (q) {
-        filtered = filtered.filter(s => 
-          (s.nm_municipio && s.nm_municipio.toLowerCase().includes(q)) ||
-          (s.sg_uf && s.sg_uf.toLowerCase().includes(q)) ||
-          (s.nr_secao && s.nr_secao.toString().includes(q)) ||
-          (s.nr_zona && s.nr_zona.toString().includes(q))
-        );
-      }
-      renderSecoesTable(filtered);
-    }
+    window.auditMunicipality = function(nm, uf) {
+      switchTab('sections');
+      const input = document.getElementById('input-search-secao');
+      if (input) input.value = nm;
+      const ufSelect = document.getElementById('select-filter-uf');
+      if (ufSelect && uf) ufSelect.value = uf;
+      filterSecoesTable();
+    };
 
     // ----------------------------------------------------
     // FALLBACKS ÁUREOS (PREVINE TELAS VAZIAS SE OFFLINE)
