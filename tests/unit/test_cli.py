@@ -154,3 +154,44 @@ def test_cli_download_mocked(tmp_path: Path, mocker: pytest_mock.MockerFixture) 
     )
     assert result.exit_code == 0
     assert "Download concluído" in result.stdout
+
+
+def test_audit_http_handler_api_sections(tmp_path: Path, mocker: pytest_mock.MockerFixture) -> None:
+    """Valida o endpoint /api/sections do servidor local de auditoria seção a seção.
+
+    Satisfaz: REQ-ANAL-01, REQ-EXPO-01.
+    """
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir(parents=True)
+    p1, p2 = build_synthetic_bu_dataset(raw_dir)
+    df_1t = pivot_presidential_bu(p1, ano=2026, turno=1)
+    df_2t = pivot_presidential_bu(p2, ano=2026, turno=2)
+    paired_df, _ = pair_turnover_sections(df_1t, df_2t, ano=2026)
+
+    db_path = tmp_path / "test_virada.duckdb"
+    consolidator = DuckDbConsolidator(db_path=db_path)
+    consolidator.consolidate_from_dataframe(paired_df)
+    consolidator.close()
+
+    from virada_eleitoral.cli import AuditHttpHandler
+
+    AuditHttpHandler.db_path = db_path
+
+    handler = mocker.MagicMock(spec=AuditHttpHandler)
+    handler.db_path = db_path
+    handler._send_json_response = mocker.MagicMock()
+
+    # Teste de consulta com filtro de UF
+    AuditHttpHandler._handle_api_sections(handler, "q=&uf=SP&limit=10")
+    assert handler._send_json_response.called
+    data = handler._send_json_response.call_args[0][0]
+    status = handler._send_json_response.call_args[1].get("status_code", 200)
+    assert status == 200
+    assert isinstance(data, list)
+    for row in data:
+        assert row["sg_uf"] == "SP"
+
+    # Teste de consulta com banco inexistente
+    handler.db_path = tmp_path / "inexistente.duckdb"
+    AuditHttpHandler._handle_api_sections(handler, "q=teste")
+    assert handler._send_json_response.call_args[1].get("status_code") == 404

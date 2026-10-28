@@ -8,10 +8,15 @@ Satisfaz: REQ-ANAL-01, REQ-NORM-01..03, REQ-EXPO-01..02, REQ-QA-01.
 
 from __future__ import annotations
 
+import functools
+import http.server
 import json
+import urllib.parse
+import webbrowser
 from pathlib import Path
-from typing import Annotated, cast
+from typing import Annotated, Any, cast
 
+import duckdb
 import polars as pl
 import typer
 from rich.console import Console
@@ -652,6 +657,134 @@ def run_all(
     console.print("[bold green]=== PIPELINE CONCLUÍDO COM SUCESSO! ===[/bold green]")
 
 
+class AuditHttpHandler(http.server.SimpleHTTPRequestHandler):
+    """Handler HTTP customizado que adiciona suporte à API de auditoria de seções.
+
+    Permite consulta analítica interativa no nível da seção eleitoral e suporte a Range headers
+    para consumo de partições Parquet por clientes DuckDB-Wasm.
+    """
+
+    db_path: Path = Path("data/virada_eleitoral.duckdb")
+
+    def do_GET(self) -> None:
+        """Processa requisições GET, interceptando rotas de API analítica."""
+        parsed_url = urllib.parse.urlparse(self.path)
+        if parsed_url.path in ("/api/sections", "/api/secoes"):
+            self._handle_api_sections(parsed_url.query)
+            return
+        super().do_GET()
+
+    def do_OPTIONS(self) -> None:
+        """Responde a requisições pre-flight CORS."""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        self.end_headers()
+
+    def _handle_api_sections(self, query_string: str) -> None:
+        """Executa consultas de auditoria seção a seção diretamente no DuckDB.
+
+        Args:
+            query_string: Parâmetros URL da consulta (q, uf, classificacao, limit).
+        """
+        params = urllib.parse.parse_qs(query_string)
+        q = params.get("q", [""])[0].strip()
+        uf = params.get("uf", [""])[0].strip().upper()
+        classificacao = params.get("classificacao", [""])[0].strip()
+        try:
+            limit = min(max(1, int(params.get("limit", [500])[0])), 2000)
+        except ValueError:
+            limit = 500
+
+        if not self.db_path.exists():
+            self._send_json_response(
+                {"error": f"Banco de dados '{self.db_path}' não encontrado."},
+                status_code=404,
+            )
+            return
+
+        try:
+            con = duckdb.connect(str(self.db_path), read_only=True)
+            conditions: list[str] = []
+            sql_params: list[Any] = []
+
+            if q:
+                q_pattern = f"%{q.lower()}%"
+                if q.isdigit():
+                    val = int(q)
+                    conditions.append(
+                        "(lower(nm_municipio) LIKE ? OR lower(sg_uf) = ? "
+                        "OR nr_secao = ? OR nr_zona = ?)"
+                    )
+                    sql_params.extend([q_pattern, q.lower(), val, val])
+                else:
+                    conditions.append("(lower(nm_municipio) LIKE ? OR lower(sg_uf) = ?)")
+                    sql_params.extend([q_pattern, q.lower()])
+
+            if uf:
+                conditions.append("sg_uf = ?")
+                sql_params.append(uf)
+
+            if classificacao:
+                conditions.append("classificacao_virada = ?")
+                sql_params.append(classificacao)
+
+            where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+            exact_q = q.lower()
+            query = f"""
+                SELECT
+                    sg_uf,
+                    cd_municipio,
+                    nm_municipio,
+                    nr_zona,
+                    nr_secao,
+                    votos_lula_1t,
+                    votos_adv_1t,
+                    votos_lula_2t,
+                    votos_adv_2t,
+                    delta_votos_lula,
+                    delta_pp_lula,
+                    delta_margem,
+                    classificacao_virada
+                FROM pair_sections
+                {where_clause}
+                ORDER BY
+                    CASE WHEN lower(nm_municipio) = ? THEN 0 ELSE 1 END,
+                    ABS(delta_margem) DESC,
+                    delta_votos_lula DESC,
+                    nr_zona,
+                    nr_secao
+                LIMIT ?;
+            """
+            sql_params.extend([exact_q, limit])
+            cursor = con.execute(query, sql_params)
+            cols = [desc[0] for desc in cursor.description]
+            rows = [dict(zip(cols, r, strict=True)) for r in cursor.fetchall()]
+            con.close()
+
+            self._send_json_response(rows, status_code=200)
+        except Exception as e:
+            self._send_json_response({"error": str(e)}, status_code=500)
+
+    def _send_json_response(self, data: Any, status_code: int = 200) -> None:
+        """Envia resposta formatada em JSON com cabeçalhos CORS.
+
+        Args:
+            data: Dados serializáveis em JSON para envio.
+            status_code: Código HTTP de resposta.
+        """
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status_code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        self.end_headers()
+        self.wfile.write(body)
+
+
 @app.command(name="serve")
 def serve(
     port: Annotated[int, typer.Option(help="Porta TCP do servidor local.")] = 8080,
@@ -659,6 +792,12 @@ def serve(
     no_browser: Annotated[
         bool, typer.Option(help="Não abrir o navegador automaticamente.")
     ] = False,
+    db_path: Annotated[
+        Path,
+        typer.Option(
+            help="Caminho do banco DuckDB consolidado para consultas locais de auditoria."
+        ),
+    ] = Path("data/virada_eleitoral.duckdb"),
 ) -> None:
     """Inicia um servidor web local para visualizar o painel interativo de viradas eleitorais.
 
@@ -666,6 +805,7 @@ def serve(
         port: Porta TCP na qual o servidor HTTP será executado.
         host: Endereço IP do host (padrão: 127.0.0.1).
         no_browser: Se verdadeiro, desativa a abertura automática do navegador.
+        db_path: Caminho do banco DuckDB consolidado para consultas dinâmicas de auditoria.
 
     Returns:
         None
@@ -673,16 +813,14 @@ def serve(
     Raises:
         None
     """
-    import functools
-    import http.server
-    import webbrowser
-
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=".")
+    AuditHttpHandler.db_path = db_path
+    handler = functools.partial(AuditHttpHandler, directory=".")
     server_url = f"http://{host}:{port}/frontend/"
 
     console.print(
         f"[bold green]=== SERVIDOR VISUAL VIRADA ELEITORAL ===[/bold green]\n"
         f"Painel interativo disponível em: [bold cyan]{server_url}[/bold cyan]\n"
+        f"Auditoria de urnas conectada a: [bold cyan]{db_path}[/bold cyan]\n"
         f"Pressione [bold yellow]Ctrl+C[/bold yellow] para encerrar."
     )
 
